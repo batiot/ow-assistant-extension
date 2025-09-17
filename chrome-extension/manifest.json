@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "OIDC EntraID Text API Extension",
+  "version": "1.0",
+  "description": "Authenticate with EntraID, send selected text to API via Alt+K.",
+  "permissions": ["identity", "scripting", "activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-not-auth.png",
+      "32": "icons/icon-not-auth.png",
+      "48": "icons/icon-not-auth.png",
+      "128": "icons/icon-not-auth.png"
+    }
+  },
+  "commands": {
+    "activate-extension": {
+      "suggested_key": {
+        "default": "Alt+K"
+      },
+      "description": "Send selected text to API"
+    }
+  },
+  "host_permissions": ["<all_urls>"]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "oidc-entra-chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension for OIDC authentication with EntraID and API call.",
+  "dependencies": {
+    "oidc-client-ts": "^2.2.1"
+  }
+}
