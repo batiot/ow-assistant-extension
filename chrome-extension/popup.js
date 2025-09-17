@@ -1,7 +1,9 @@
 
 
+
 // OIDC authentication logic using oidc-client-ts
-import { UserManager } from "oidc-client-ts";
+// Note: oidc-client-ts should be included via CDN in popup.html
+// Example: <script src="https://cdn.jsdelivr.net/npm/oidc-client-ts/dist/oidc-client.min.js"></script>
 
 const oidcConfig = {
   authority: "https://login.microsoftonline.com/common/v2.0",
@@ -11,7 +13,7 @@ const oidcConfig = {
   scope: "openid profile email",
 };
 
-const userManager = new UserManager(oidcConfig);
+const userManager = new window.Oidc.UserManager(oidcConfig); // Use global Oidc from CDN
 let accessToken = null;
 
 // Automatically authenticate on extension load
