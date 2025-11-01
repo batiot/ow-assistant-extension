@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "OpenWebUI Assistant (Edge)",
+  "version": "0.1.0",
+  "description": "Use OpenWebUI authenticated session to call remote LLM agents from the current page.",
+  "permissions": ["storage","activeTab","scripting"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "commands": {
+    "trigger-agent": {
+      "suggested_key": { "default": "Alt+K" },
+      "description": "Trigger OpenWebUI assistant agent on the current page"
+    }
+  }
+}

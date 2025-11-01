@@ -1,0 +1,9 @@
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './',
+  timeout: 30_000,
+  use: {
+    headless: true,
+  },
+});
