@@ -1,0 +1,17 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {}
+}
+
+{
+  "name": "Project with OpenSpec",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "postCreateCommand": "npm install -g @fission-ai/openspec@latest && openspec init",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Add your AI coding assistant extensions here
+      ]
+    }
+  }
+}
