@@ -1,0 +1,10 @@
+{
+  "name": "ow-assistant-extension",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Open WebUI extension - scaffold for initial E2E test",
+  "scripts": {
+    "test:e2e": "node test/e2e/run-e2e.js"
+  },
+  "license": "MIT"
+}
