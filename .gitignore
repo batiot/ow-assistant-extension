@@ -23,3 +23,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright / e2e temporary browser profile
+test/e2e/tmp/
+
+# Test results / reports
+playwright-report/
+test-results/
