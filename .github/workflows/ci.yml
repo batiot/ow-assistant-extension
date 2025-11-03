@@ -2,7 +2,7 @@ name: CI — typecheck, build, e2e
 
 on:
   push:
-    branches: [ 'develop', 'main', 'master' ]
+    branches: [ 'develop', 'main','openspec', 'master' ]
   pull_request:
     branches: [ 'develop', 'main', 'master' ]
   workflow_dispatch:
