@@ -13,10 +13,17 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    // Expose mock server URL for E2E tests
+    // Expose OpenWebUI base URL:
+    // - Test mode: Use mock server URL
+    // - Production: Use DEFAULT_OPENWEBUI_BASE_URL from CI/CD variables
+    // - Development: Use VITE_OPENWEBUI_BASE_URL or empty string
     'import.meta.env.VITE_OPENWEBUI_BASE_URL': mode === 'test' 
       ? JSON.stringify(process.env.MOCK_SERVER_URL || 'http://localhost:3001')
-      : JSON.stringify(process.env.VITE_OPENWEBUI_BASE_URL || ''),
+      : JSON.stringify(
+          process.env.DEFAULT_OPENWEBUI_BASE_URL || 
+          process.env.VITE_OPENWEBUI_BASE_URL || 
+          ''
+        ),
   },
   plugins: [
     react(),

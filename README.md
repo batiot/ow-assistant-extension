@@ -14,14 +14,43 @@ A Chrome extension that provides seamless integration with OpenWebUI, enabling A
 
 ## Configuration
 
-Before using the extension, you need to configure the OpenWebUI base URL:
+### OpenWebUI Base URL
 
+The extension needs to know your OpenWebUI instance URL. This can be configured in three ways:
+
+**For End Users:**
 1. Open the extension popup
-2. Navigate to Settings (or configuration UI)
+2. Navigate to Settings (or configuration UI - *coming soon*)
 3. Enter your OpenWebUI instance URL (e.g., `https://your-openwebui.com`)
 4. Save the configuration
 
-The extension stores this configuration in `chrome.storage.local` and uses it for all API requests.
+The extension stores this in `chrome.storage.local`.
+
+**For Production Builds (CI/CD):**
+
+Set the `DEFAULT_OPENWEBUI_BASE_URL` environment variable before building:
+
+```bash
+DEFAULT_OPENWEBUI_BASE_URL=https://your-openwebui.com npm run build
+```
+
+This will bake the URL into the extension at build time.
+
+**For Development:**
+
+Create a `.env` file in the project root:
+
+```bash
+VITE_OPENWEBUI_BASE_URL=http://localhost:8080
+```
+
+**For E2E Testing:**
+
+The test mode automatically uses the mock server - no configuration needed:
+
+```bash
+npm run test:e2e  # Automatically uses mock server
+```
 
 ## Authentication Flow
 

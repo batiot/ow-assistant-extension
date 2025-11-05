@@ -12,9 +12,10 @@ export interface ConfigValidationResult {
 
 /**
  * Default configuration values
+ * Uses VITE_OPENWEBUI_BASE_URL from build-time environment
  */
 export const DEFAULT_CONFIG: ExtensionConfig = {
-  openWebUIBaseUrl: '',
+  openWebUIBaseUrl: import.meta.env.VITE_OPENWEBUI_BASE_URL || '',
 };
 
 /**
