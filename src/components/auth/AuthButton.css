@@ -1,0 +1,33 @@
+.auth-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-button {
+  background: #0078d4;
+  color: white;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #106ebe;
+}
+
+.logout-button {
+  background: #f3f2f1;
+  color: #323130;
+  border: 1px solid #8a8886;
+}
+
+.logout-button:hover:not(:disabled) {
+  background: #e1dfdd;
+}

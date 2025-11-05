@@ -1,0 +1,602 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "WebInspector",
+      "version": "537.36"
+    },
+    "entries": [
+      {
+        "_connectionId": "20067",
+        "_priority": "VeryHigh",
+        "_resourceType": "document",
+        "cache": {},
+        "connection": "443",
+        "pageref": "page_14",
+        "request": {
+          "method": "GET",
+          "url": "https://kat-ui.cbp-dev.com/oauth/microsoft/login",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": ":authority",
+              "value": "kat-ui.cbp-dev.com"
+            },
+            {
+              "name": ":method",
+              "value": "GET"
+            },
+            {
+              "name": ":path",
+              "value": "/oauth/microsoft/login"
+            },
+            {
+              "name": ":scheme",
+              "value": "https"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+            },
+            {
+              "name": "referer",
+              "value": "https://kat-ui.cbp-dev.com/ui"
+            },
+            {
+              "name": "sec-fetch-site",
+              "value": "same-origin"
+            },
+            {
+              "name": "sec-fetch-user",
+              "value": "?1"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": "cache-control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "name": "content-length",
+              "value": "0"
+            },
+            {
+              "name": "content-security-policy",
+              "value": "connect-src 'self' wss://kat-ui.cbp-dev.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; frame-src 'self'; img-src 'self' blob: data:; report-to 'default';"
+            },
+            {
+              "name": "date",
+              "value": "Mon, 03 Nov 2025 07:53:46 GMT"
+            },
+            {
+              "name": "location",
+              "value": "https://login.microsoftonline.com/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs"
+            },
+            {
+              "name": "x-process-time",
+              "value": "0"
+            },
+            {
+              "name": "set-cookie",
+              "value": "owui-session=eyJfc3RhdGVfbWljcm9zb2Z0X2tJTTRweWlnNFVWUkFqYzR0dEdnQXpGbFRJTFlvaiI6IHsiZGF0YSI6IHsicmVkaXJlY3RfdXJpIjogImh0dHBzOi8va2F0LXVpLmNicC1kZXYuY29tL29hdXRoL21pY3Jvc29mdC9jYWxsYmFjayIsICJub25jZSI6ICJwT1VBVmViVTZ3SW5HbWVGOElGYyIsICJ1cmwiOiAiaHR0cHM6Ly9sb2dpbi5taWNyb3NvZnRvbmxpbmUuY29tLzRjYmYxZTdmLTQyNjAtNDNkYS1iYzAxLTM1M2U0MjUzYmM1Yi9vYXV0aDIvdjIuMC9hdXRob3JpemU/cmVzcG9uc2VfdHlwZT1jb2RlJmNsaWVudF9pZD0wZTFjZDY5YS01Yzk5LTQzNDQtYjFmZi1lOWY4YzM0NjhiODAmcmVkaXJlY3RfdXJpPWh0dHBzJTNBJTJGJTJGa2F0LXVpLmNicC1kZXYuY29tJTJGb2F1dGglMkZtaWNyb3NvZnQlMkZjYWxsYmFjayZzY29wZT1vcGVuaWQrcHJvZmlsZStlbWFpbCtVc2VyLlJlYWQrQ2hhdC5SZWFkQmFzaWMrT25saW5lTWVldGluZ3MuUmVhZCtPbmxpbmVNZWV0aW5nVHJhbnNjcmlwdC5SZWFkLkFsbCtvZmZsaW5lX2FjY2VzcyZzdGF0ZT1rSU00cHlpZzRVVlJBamM0dHRHZ0F6RmxUSUxZb2ombm9uY2U9cE9VQVZlYlU2d0luR21lRjhJRmMifSwgImV4cCI6IDE3NjIyNjI4ODMuMTkwNDkxMn19.aQnxUw.fck6V2otBCTvItlFt4sf93bRkvk; path=/; Max-Age=1209600; httponly; samesite=lax; secure"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 0,
+            "mimeType": "x-unknown"
+          },
+          "redirectURL": "https://login.microsoftonline.com/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs",
+          "headersSize": -1,
+          "bodySize": -1,
+          "_transferSize": 1089,
+          "_error": null,
+          "_fetchedViaServiceWorker": false
+        },
+        "serverIPAddress": "10.97.130.58",
+        "startedDateTime": "2025-11-03T07:53:46.153Z",
+        "time": 138.75599999983024
+      },
+      {
+        "_connectionId": "37173",
+        "_priority": "VeryHigh",
+        "_resourceType": "document",
+        "cache": {},
+        "connection": "443",
+        "pageref": "page_14",
+        "request": {
+          "method": "GET",
+          "url": "https://login.microsoftonline.com/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": ":authority",
+              "value": "login.microsoftonline.com"
+            },
+            {
+              "name": ":method",
+              "value": "GET"
+            },
+            {
+              "name": ":path",
+              "value": "/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs"
+            },
+            {
+              "name": ":scheme",
+              "value": "https"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+            },
+            {
+              "name": "referer",
+              "value": "https://kat-ui.cbp-dev.com/"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0 OS/10.0.22631"
+            },
+            {
+              "name": "x-ms-devicecredential",
+              "value": "eyJhbGciOiJSUzI1NiIsICJ0eXAiOiJKV1QiLCAieDVjIjoiTUlJRDhqQ0NBdHFnQXdJQkFnSVFmXC8xcktXdnhlb0pQTlwvVUVwekVDbURBTkJna3Foa2lHOXcwQkFRc0ZBREI0TVhZd0VRWUtDWkltaVpQeUxHUUJHUllEYm1WME1CVUdDZ21TSm9tVDhpeGtBUmtXQjNkcGJtUnZkM013SFFZRFZRUURFeFpOVXkxUGNtZGhibWw2WVhScGIyNHRRV05qWlhOek1Dc0dBMVVFQ3hNa09ESmtZbUZqWVRRdE0yVTRNUzAwTm1OaExUbGpOek10TURrMU1HTXhaV0ZqWVRrM01CNFhEVEkwTVRJd05ERXpORFl4TjFvWERUTTBNVEl3TkRFME1UWXhOMW93THpFdE1Dc0dBMVVFQXhNa01XRTRObVl6TXpBdFl6VTVPQzAwTTJJM0xUazJPR1l0WmpjeFpUYzJOek0wTkRsaU1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0NBUUVBOTFGVnVGR2Q1MHc4Q1N6UlhrZDBnVlRidk5tMWJQQytYS0hPQ0lsdnhwaUdcL1wvcG5FeEZWSzlMOEg3U3RiT1BraUFDNXNRZzBYM0xJaVYwZ1NpekplNldUNjVTb09KMlVLYU5qbXdWYmdqdExEREpNMHlFOGxndXZpR3RTQXZ5S2ViTWZOeE5PU0NtRkFpREEyRDVudGpadEVBMTlaYkt4U3JZU3ZOdWYxRFBmWDVhUFU0MGNnbDVaWDAyMzVkOFRRZ2NtRk92RVpObjhJR3V6WURwRndHSDZtelE2b05jSVRuekQ3R1VpRndiVUlGN3dVWjdXbFhHWlVoN0Y4YjBvYzVUVExLRHZpUjI3WE1UXC9HRVA2TnU1UW1DK3pRbktyVExwM0twc1UwaU1DRXpZYUo3UXoxamhvbGwwOWZpWmJTVmRFTkE3Qjg4aHJDYTQ5d1wvV3BDUUlEQVFBQm80SEFNSUc5TUF3R0ExVWRFd0VCXC93UUNNQUF3RmdZRFZSMGxBUUhcL0JBd3dDZ1lJS3dZQkJRVUhBd0l3SWdZTEtvWklodmNVQVFXQ0hBSUVFd1NCRUREemhocVl4YmREbG9cLzNIblp6Ukpzd0lnWUxLb1pJaHZjVUFRV0NIQU1FRXdTQkVERHpoaHFZeGJkRGxvXC8zSG5aelJKc3dJZ1lMS29aSWh2Y1VBUVdDSEFVRUV3U0JFSDhldjB4Z1F0cER2QUUxUGtKVHZGc3dGQVlMS29aSWh2Y1VBUVdDSEFnRUJRU0JBa1ZWTUJNR0N5cUdTSWIzRkFFRmdod0hCQVFFZ1FFeE1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQTBZTHRPMmF5NUVVVHpPdG1LcFhOZlhtV0F4ZWlMTmNzNmxCR0NnZW5XUGROc3VuZjc2bnQrRUVPZGIxNmxaMDNLalptdCtJTGJzU1FITWU2RzdUUjVnN0tvcnFFVHEyck82T250SHAyWWxOazFDeDR6YmNsVCtnU25YN0hWUDFPRTlhRzRBQXlaNlczTnNLOHJXa0ljd09ENjBOeUVBQXEyajh0K2FIUjB1U2I3SnlERVMrbGk4cVN3eVgrdDhiWXB0NGM0dXNXSjZkaVpFZUx0VFVkZGZQaUVRUU9xZiszSmtXenQ2dEM2b2lDdXQ2NjRiMDN6d2ttU0Ntc09mVHY4SzNrVzhlb0JZUjJGdHdMN2tsQVArWW5UcmZDTkpkY3FmVzNcL1lqZ3lCODJ2UmVlUnVaWGgweTNZRkRndUw5aVVsb3V5QUR0Vmd0czNPRWwxWUxlZSIsICJrZGZfdmVyIjoyfQ.eyJyZXF1ZXN0X25vbmNlIjoiQXdBQkVnRUFBQUFEQU96X0JRRDBfOTJucjVtdVdMVXlLTHYwa3BjM1VDeEczTnhPb2FhNGloRkpVcnZYRUlFVDFhc2pJenFncWNSUG93Q1RQZS14THFlVmtEZ2Y5T2dQNGxBS08xODBad0lnQUEiLCAiaXNzIjoiYWFkOmJyb2tlcnBsdWdpbiIsICJ0ZW5hbnRfaWQiOiI0Y2JmMWU3Zi00MjYwLTQzZGEtYmMwMS0zNTNlNDI1M2JjNWIiLCAiZ3JhbnRfdHlwZSI6ImRldmljZV9hdXRoIiwgIndpbl92ZXIiOiIxMC4wLjIyNjIxLjYwNjAiLCAid2luZG93c19hcGlfdmVyc2lvbiI6IjIuMC4xIiwgInhfY2xpZW50X3BsYXRmb3JtIjoid2luZG93cyJ9.ui0bzf7j7fle1EU-Aez3e-iij42P_lWUd1SSkLb9hv9BgD96KnGwkwVbcjtKLvHGVf4N8KdEhrVAIQ0vBXLxj31HGXq1W9HS6NcgZHbNuZ1k2RkxyqpN3eC3dP80jc7OHh3sCcmH_F1qZPDUiUrCoB1Zs_sovBowLDT-I1eNMDq9FQDOriIhNaW_HukFzxmXpIL_BVIbdJZL8HAiqce9Yj5XCo46Rm5M1WNjbnkBDI1hzw3AHiPLrMGSVpTgNygWU6l1w-1n1ij5IVKEbENKZxz_szguYLjdte2wusnjO2BVNCSyNlTu8-yj_SqqnXovN7vBHTO7bKoHesY1r3-5UQ"
+            },
+            {
+              "name": "x-ms-refreshtokencredential",
+              "value": "eyJhbGciOiJIUzI1NiIsICJrZGZfdmVyIjoyLCAiY3R4IjoiNVwvdVJKMFIxVVhjRkNNWDRoc2xYN2Y5UThFanlZejNpIn0.eyJyZWZyZXNoX3Rva2VuIjoiMS5BUzhBZng2X1RHQkMya084QVRVLVFsTzhXNGM3cWpodG9CZElzblY2TVdtSTJUdXdBTVV2QUEuQWdBQkF3RUFBQUJsTU56VmhBUFVUckFSemZRaldQdEtBd0RzX3dVQTlQOG9NM3h5U1RQYWxlc3RldUU5aFVZdjltQ3ROeHVoQXExOXpsaktMQnBOZ3dzTGc4SkdMXzNTTzcta21lX0RTcGxUWVY1b05lQXJQN2tXM0ZVUThFaVJvTDRKMXk0NDVVeE5IcDhGVndiX3dPWm9NV2RmS0ZWaVpXVmNuZEF0TDNrLWxWRXVfbVRscEtjSjhnbUxuM3k2MVNuemhYWUFkVzRNNVpiNXJRUC1nVlhINjFpNk1BWHh1Njdrb2RqcG05ZGRzQVJYZWJSYzR0SVRGZG1CSDVCazc2SFpvVFdrTWVmTzBHeGZnNnBTX2VMaE4zQ18tZ0V0LWZ5SW5CeUxtQm1UeFVFS0laWTVTdHVHSDV4ZG95RXktRWVvQ0JuY2QtaUM4NXdQRG1mZXphc2NqbVJ3eUZxS2VfbnJnVklnVUpYMzNGczI1VEZzZ01STkprTE1kaERNaWQ2N2c0OHZKTnFUc256aW5pSDYwYjRXTm5rUGhCNEpKc2Q2OXBNN0VLM2dGZnZISlZrU1c4VlphT3AzVnVxelAyMWtQQVNDTVNYQXdmRGpOY3lDekI5LTI0YnJaOEwzdmNYdnM0ZS1DME0tS2xSSlp4bHp2UF8yUk1leHcyTWFRbndGVkpTSlkxakxmRG83WkVpcHppbDctSWRLc2NwNF8xSWdjOWpoWXp4dFJIclk3em56U1d2WnU0aFpCLUlHaXdBLXBDQzFoVW9lN3R5cHhmVll2QzZUOTI0N1NTU093aG92bXB2WDlPNklGWFZraXBVNHoxYzJvalJtQW5ROW9FQmptUERKTjNOejFCUUFLNnA4S1hIRi1DR0N2eWxhRENMdTIwNzVScG4xUV81cWMzcHZLNkx1bUNWcW45ODJ1cWlpQUJablJfa3dQYVNIZVRqTlo1U0t5ZzdMVTc2WTVPeDN6dUVFa1E1NWJJdS1tUExwTUpWLVl2aG0zeFlDaEI2U0J2RUY5QUJpSml6c0JqSlJYbzBKYXp6Z1M2ZjhXczBMN01WbnZwdnNuZlNPelB2Q29vZC1JckRxOW9zRE5oTTF6YVc1LTQ5OWxOM3BiMnlRUHVZeTdYeWM4YVNjb2hianRRdE9VaFU5ZU1wNnlnc1IwaDlyT0NGRE9QSGdKVURxMFQ2RVpLUTV1NVBXVVhja1BIRWI1dTNPc19Majk5ZGtNLXVUOHJyejNGSjE3MkxrTmZ4dXpkR3pIV3k2akNoemNuSGtyQUk2OTBVUmw2WlU2cGx3SUlTakFqRXZoMmRmekJJanlqRVVXb2hyRjhDbm1Rb2lKOU1ja0liXyIsICJpc19wcmltYXJ5IjoidHJ1ZSIsICJ3aW5fdmVyIjoiMTAuMC4yMjYyMS42MDYwIiwgIndpbmRvd3NfYXBpX3ZlcnNpb24iOiIyLjAuMSIsICJ4X2NsaWVudF9wbGF0Zm9ybSI6IndpbmRvd3MiLCAicmVxdWVzdF9ub25jZSI6IkF3QUJFZ0VBQUFBREFPel9CUUQwXzkybnI1bXVXTFV5S0x2MGtwYzNVQ3hHM054T29hYTRpaEZKVXJ2WEVJRVQxYXNqSXpxZ3FjUlBvd0NUUGUteExxZVZrRGdmOU9nUDRsQUtPMTgwWndJZ0FBIn0.HmZn9M15N9r57ltgcMStYdjkMyixjaCwRZtClSuavhU"
+            },
+            {
+              "name": "x-ms-ssoflags",
+              "value": "SsoRestr"
+            }
+          ],
+          "queryString": [
+            {
+              "name": "response_type",
+              "value": "code"
+            },
+            {
+              "name": "client_id",
+              "value": "0e1cd69a-5c99-4344-b1ff-e9f8c3468b80"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback"
+            },
+            {
+              "name": "scope",
+              "value": "openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access"
+            },
+            {
+              "name": "state",
+              "value": "3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX"
+            },
+            {
+              "name": "nonce",
+              "value": "nzIkjfGPgpP4B7xRAuNs"
+            }
+          ],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": "cache-control",
+              "value": "no-store, no-cache"
+            },
+            {
+              "name": "content-encoding",
+              "value": "gzip"
+            },
+            {
+              "name": "content-length",
+              "value": "1158"
+            },
+            {
+              "name": "content-security-policy-report-only",
+              "value": "object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-xWFr9fAPxmrDuI0yB7GF5g' 'unsafe-inline' 'unsafe-eval' https://*.msauth.net https://*.msftauth.net https://*.msftauthimages.net https://*.msauthimages.net https://*.msidentity.com https://*.microsoftonline-p.com https://*.microsoftazuread-sso.com https://*.azureedge.net https://*.outlook.com https://*.office.com https://*.office365.com https://*.microsoft.com https://*.bing.com 'report-sample'; report-uri https://csp.microsoft.com/report/ESTS-UX-All"
+            },
+            {
+              "name": "content-type",
+              "value": "text/html; charset=utf-8"
+            },
+            {
+              "name": "date",
+              "value": "Mon, 03 Nov 2025 07:53:46 GMT"
+            },
+            {
+              "name": "expires",
+              "value": "-1"
+            },
+            {
+              "name": "nel",
+              "value": "{\"report_to\":\"network-errors\",\"max_age\":86400,\"success_fraction\":0.001,\"failure_fraction\":1.0}"
+            },
+            {
+              "name": "p3p",
+              "value": "CP=\"DSP CUR OTPi IND OTRi ONL FIN\""
+            },
+            {
+              "name": "report-to",
+              "value": "{\"group\":\"network-errors\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://identity.nel.measure.office.net/api/report?catId=GW+estsfd+dub2\"}]}"
+            },
+            {
+              "name": "x-ms-ests-server",
+              "value": "2.1.22389.8 - WEULR1 ProdSlices"
+            },
+            {
+              "name": "x-ms-request-id",
+              "value": "ab82a75b-22f2-4a14-883e-6e7ea7332600"
+            },
+            {
+              "name": "x-ms-srs",
+              "value": "1.P"
+            },
+            {
+              "name": "x-xss-protection",
+              "value": "0"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 1456,
+            "mimeType": "text/html"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": -1,
+          "_transferSize": 4877,
+          "_error": null,
+          "_fetchedViaServiceWorker": false
+        },
+        "serverIPAddress": "40.126.31.128",
+        "startedDateTime": "2025-11-03T07:53:46.292Z",
+        "time": 306.8470000001039
+      },
+      {
+        "_connectionId": "20067",
+        "_initiator": {
+          "type": "script",
+          "stack": {
+            "callFrames": [
+              {
+                "functionName": "",
+                "scriptId": "14",
+                "url": "https://login.microsoftonline.com/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs",
+                "lineNumber": 3,
+                "columnNumber": 25
+              }
+            ]
+          }
+        },
+        "_priority": "VeryHigh",
+        "_resourceType": "document",
+        "cache": {},
+        "connection": "443",
+        "pageref": "page_15",
+        "request": {
+          "method": "GET",
+          "url": "https://kat-ui.cbp-dev.com/oauth/microsoft/callback?code=1.AS8Afx6_TGBC2kO8ATU-QlO8W5rWHA6ZXERDsf_p-MNGi4CwAMUvAA.AgABBAIAAABlMNzVhAPUTrARzfQjWPtKAwDs_wUA9P9PWQODS0RVEoNvzrWHm9kngTo_EwmePMFawsZuQKKh_NISUgUY0KTEaQLSj2NvCP9LAAVT6nY-CUXjfjAY_ING94W5QJs6ODXWhwRGb5UUCtENa9SY1QvoTeVfrj862txV7qr-v1kzATFPRhwLtRtrneQ36mHSxqgo_bBe0jSP47grKOeS-ZThesZY7HP0BHpl1RmoMYcrsl_l5ctYdSHxppcjUH5KIGQQxW4y2E0BKaG9Rnt-TymAlaVlyhsk4VHK6lgUQ_J0UKSAfK1RC0QBS910ka4nSj-dRB-msKYeNz46aC7PU0MqE_FFiGX0QvTDzQlas3vNgzXXOFEvnK2EZ1KdWC3QfUp_DMUU3Ex6HBxT80_e1Ecf-Gqo7Icqi83z0kctOcH7aM_TNpH8a-0f_1BgaZHyDTkGCW0CiSTzTChEJKxB8YnKKLagsLirFxkzG_2PmaCK9YBImMGSce3b7P8ykeSlyBx9mQO8lBQB5QXIRPz7R8Ktj2ekG--SXWq8F0ZkdUU6kOUvXrjfTsl_QrjbYLTEis9k1SPbexGu1aR3K7y-_FfaiaEf_HsQn5fzRjl44Ke_LPkQxPKfyDQQujGOlEMs_wbqZdedhiau7pG6DrSNsXi0rVUTjE2ja76fqpDwbmfZKyH1ZS2bSUgeATVxppy8uGPkb79slVp0Efdsh_rNb99xkGe7TlnPfceiOdo-csHTNJSS4ZxeQ8O8-Vx85I-D3yYoHNaER-4kQsXKfnlt44DLdKnesleGoAIWGMkkXIthpqOpMOc2sbZCgSqCkEx1b8bJpFDPzUFy062cK2hjUAlwHQW8NgGlFPBNWsjee_FTsgw1W0c9gtvmdmhRXGmPfskdOKwWkRbmdiaZVdEHBNi0rsij17G_dFxM-cUVvSEa7mETB4BqR14q_e-VaGUqVLFZSpH2NcZmXTuyedmYo16iNunSFZw7nR9Fu6qgKwOBlwWuROMExl8emNh03HQODtL4G9iI-S8qC1G5z8Jt9b14bSqoM2_hgT8bMlTUzQ7KcRV-XFb-VPSBF1fa4isuLOGo_Ch0ZPQHpg&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&session_state=008a1f79-0435-b51f-0f20-0edf1eedde2e",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": ":authority",
+              "value": "kat-ui.cbp-dev.com"
+            },
+            {
+              "name": ":method",
+              "value": "GET"
+            },
+            {
+              "name": ":path",
+              "value": "/oauth/microsoft/callback?code=1.AS8Afx6_TGBC2kO8ATU-QlO8W5rWHA6ZXERDsf_p-MNGi4CwAMUvAA.AgABBAIAAABlMNzVhAPUTrARzfQjWPtKAwDs_wUA9P9PWQODS0RVEoNvzrWHm9kngTo_EwmePMFawsZuQKKh_NISUgUY0KTEaQLSj2NvCP9LAAVT6nY-CUXjfjAY_ING94W5QJs6ODXWhwRGb5UUCtENa9SY1QvoTeVfrj862txV7qr-v1kzATFPRhwLtRtrneQ36mHSxqgo_bBe0jSP47grKOeS-ZThesZY7HP0BHpl1RmoMYcrsl_l5ctYdSHxppcjUH5KIGQQxW4y2E0BKaG9Rnt-TymAlaVlyhsk4VHK6lgUQ_J0UKSAfK1RC0QBS910ka4nSj-dRB-msKYeNz46aC7PU0MqE_FFiGX0QvTDzQlas3vNgzXXOFEvnK2EZ1KdWC3QfUp_DMUU3Ex6HBxT80_e1Ecf-Gqo7Icqi83z0kctOcH7aM_TNpH8a-0f_1BgaZHyDTkGCW0CiSTzTChEJKxB8YnKKLagsLirFxkzG_2PmaCK9YBImMGSce3b7P8ykeSlyBx9mQO8lBQB5QXIRPz7R8Ktj2ekG--SXWq8F0ZkdUU6kOUvXrjfTsl_QrjbYLTEis9k1SPbexGu1aR3K7y-_FfaiaEf_HsQn5fzRjl44Ke_LPkQxPKfyDQQujGOlEMs_wbqZdedhiau7pG6DrSNsXi0rVUTjE2ja76fqpDwbmfZKyH1ZS2bSUgeATVxppy8uGPkb79slVp0Efdsh_rNb99xkGe7TlnPfceiOdo-csHTNJSS4ZxeQ8O8-Vx85I-D3yYoHNaER-4kQsXKfnlt44DLdKnesleGoAIWGMkkXIthpqOpMOc2sbZCgSqCkEx1b8bJpFDPzUFy062cK2hjUAlwHQW8NgGlFPBNWsjee_FTsgw1W0c9gtvmdmhRXGmPfskdOKwWkRbmdiaZVdEHBNi0rsij17G_dFxM-cUVvSEa7mETB4BqR14q_e-VaGUqVLFZSpH2NcZmXTuyedmYo16iNunSFZw7nR9Fu6qgKwOBlwWuROMExl8emNh03HQODtL4G9iI-S8qC1G5z8Jt9b14bSqoM2_hgT8bMlTUzQ7KcRV-XFb-VPSBF1fa4isuLOGo_Ch0ZPQHpg&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&session_state=008a1f79-0435-b51f-0f20-0edf1eedde2e"
+            },
+            {
+              "name": ":scheme",
+              "value": "https"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+            },
+            {
+              "name": "referer",
+              "value": "https://login.microsoftonline.com/"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"
+            }
+          ],
+          "queryString": [
+            {
+              "name": "code",
+              "value": "1.AS8Afx6_TGBC2kO8ATU-QlO8W5rWHA6ZXERDsf_p-MNGi4CwAMUvAA.AgABBAIAAABlMNzVhAPUTrARzfQjWPtKAwDs_wUA9P9PWQODS0RVEoNvzrWHm9kngTo_EwmePMFawsZuQKKh_NISUgUY0KTEaQLSj2NvCP9LAAVT6nY-CUXjfjAY_ING94W5QJs6ODXWhwRGb5UUCtENa9SY1QvoTeVfrj862txV7qr-v1kzATFPRhwLtRtrneQ36mHSxqgo_bBe0jSP47grKOeS-ZThesZY7HP0BHpl1RmoMYcrsl_l5ctYdSHxppcjUH5KIGQQxW4y2E0BKaG9Rnt-TymAlaVlyhsk4VHK6lgUQ_J0UKSAfK1RC0QBS910ka4nSj-dRB-msKYeNz46aC7PU0MqE_FFiGX0QvTDzQlas3vNgzXXOFEvnK2EZ1KdWC3QfUp_DMUU3Ex6HBxT80_e1Ecf-Gqo7Icqi83z0kctOcH7aM_TNpH8a-0f_1BgaZHyDTkGCW0CiSTzTChEJKxB8YnKKLagsLirFxkzG_2PmaCK9YBImMGSce3b7P8ykeSlyBx9mQO8lBQB5QXIRPz7R8Ktj2ekG--SXWq8F0ZkdUU6kOUvXrjfTsl_QrjbYLTEis9k1SPbexGu1aR3K7y-_FfaiaEf_HsQn5fzRjl44Ke_LPkQxPKfyDQQujGOlEMs_wbqZdedhiau7pG6DrSNsXi0rVUTjE2ja76fqpDwbmfZKyH1ZS2bSUgeATVxppy8uGPkb79slVp0Efdsh_rNb99xkGe7TlnPfceiOdo-csHTNJSS4ZxeQ8O8-Vx85I-D3yYoHNaER-4kQsXKfnlt44DLdKnesleGoAIWGMkkXIthpqOpMOc2sbZCgSqCkEx1b8bJpFDPzUFy062cK2hjUAlwHQW8NgGlFPBNWsjee_FTsgw1W0c9gtvmdmhRXGmPfskdOKwWkRbmdiaZVdEHBNi0rsij17G_dFxM-cUVvSEa7mETB4BqR14q_e-VaGUqVLFZSpH2NcZmXTuyedmYo16iNunSFZw7nR9Fu6qgKwOBlwWuROMExl8emNh03HQODtL4G9iI-S8qC1G5z8Jt9b14bSqoM2_hgT8bMlTUzQ7KcRV-XFb-VPSBF1fa4isuLOGo_Ch0ZPQHpg"
+            },
+            {
+              "name": "state",
+              "value": "3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX"
+            },
+            {
+              "name": "session_state",
+              "value": "008a1f79-0435-b51f-0f20-0edf1eedde2e"
+            }
+          ],
+          "cookies": [
+            "owui-session=eyJfc3RhdGVfbWljcm9zb2Z0X2tJTTRweWlnNFVWUkFqYzR0dEdnQXpGbFRJTFlvaiI6IHsiZGF0YSI6IHsicmVkaXJlY3RfdXJpIjogImh0dHBzOi8va2F0LXVpLmNicC1kZXYuY29tL29hdXRoL21pY3Jvc29mdC9jYWxsYmFjayIsICJub25jZSI6ICJwT1VBVmViVTZ3SW5HbWVGOElGYyIsICJ1cmwiOiAiaHR0cHM6Ly9sb2dpbi5taWNyb3NvZnRvbmxpbmUuY29tLzRjYmYxZTdmLTQyNjAtNDNkYS1iYzAxLTM1M2U0MjUzYmM1Yi9vYXV0aDIvdjIuMC9hdXRob3JpemU/cmVzcG9uc2VfdHlwZT1jb2RlJmNsaWVudF9pZD0wZTFjZDY5YS01Yzk5LTQzNDQtYjFmZi1lOWY4YzM0NjhiODAmcmVkaXJlY3RfdXJpPWh0dHBzJTNBJTJGJTJGa2F0LXVpLmNicC1kZXYuY29tJTJGb2F1dGglMkZtaWNyb3NvZnQlMkZjYWxsYmFjayZzY29wZT1vcGVuaWQrcHJvZmlsZStlbWFpbCtVc2VyLlJlYWQrQ2hhdC5SZWFkQmFzaWMrT25saW5lTWVldGluZ3MuUmVhZCtPbmxpbmVNZWV0aW5nVHJhbnNjcmlwdC5SZWFkLkFsbCtvZmZsaW5lX2FjY2VzcyZzdGF0ZT1rSU00cHlpZzRVVlJBamM0dHRHZ0F6RmxUSUxZb2ombm9uY2U9cE9VQVZlYlU2d0luR21lRjhJRmMifSwgImV4cCI6IDE3NjIyNjI4ODMuMTkwNDkxMn19.aQnxUw.fck6V2otBCTvItlFt4sf93bRkvk"
+          ],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 307,
+          "statusText": "Temporary Redirect",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": "cache-control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "name": "content-length",
+              "value": "0"
+            },
+            {
+              "name": "content-security-policy",
+              "value": "connect-src 'self' wss://kat-ui.cbp-dev.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; frame-src 'self'; img-src 'self' blob: data:; report-to 'default';"
+            },
+            {
+              "name": "date",
+              "value": "Mon, 03 Nov 2025 07:53:47 GMT"
+            },
+            {
+              "name": "location",
+              "value": "https://kat-ui.cbp-dev.com/auth"
+            },
+            {
+              "name": "x-process-time",
+              "value": "1"
+            },
+            {
+              "name": "set-cookie",
+              "value": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZiZjU3YTkyLTUxYWItNGNmZi04ZGVkLWNjYWJmZmY1OTFlYSIsImV4cCI6MTc2MjMwMjQ4NH0.3fL624E5lDJLlY0g8H7w2z2ypyQk649E2d_7u6MIkHk; Path=/; SameSite=lax; Secure"
+            },
+            {
+              "name": "set-cookie",
+              "value": "oauth_session_id=cc9336ef-42f9-442d-9739-b320f5e318b3; HttpOnly; Path=/; SameSite=lax; Secure"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 0,
+            "mimeType": "x-unknown"
+          },
+          "redirectURL": "https://kat-ui.cbp-dev.com/auth",
+          "headersSize": -1,
+          "bodySize": -1,
+          "_transferSize": 412,
+          "_error": null,
+          "_fetchedViaServiceWorker": false
+        },
+        "serverIPAddress": "10.97.130.58",
+        "startedDateTime": "2025-11-03T07:53:46.739Z",
+        "time": 520.3490000001239
+      },
+      {
+        "_connectionId": "20067",
+        "_initiator": {
+          "type": "script",
+          "stack": {
+            "callFrames": [
+              {
+                "functionName": "",
+                "scriptId": "14",
+                "url": "https://login.microsoftonline.com/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs",
+                "lineNumber": 3,
+                "columnNumber": 25
+              }
+            ]
+          }
+        },
+        "_priority": "VeryHigh",
+        "_resourceType": "document",
+        "cache": {},
+        "connection": "443",
+        "pageref": "page_15",
+        "request": {
+          "method": "GET",
+          "url": "https://kat-ui.cbp-dev.com/auth",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": ":authority",
+              "value": "kat-ui.cbp-dev.com"
+            },
+            {
+              "name": ":method",
+              "value": "GET"
+            },
+            {
+              "name": ":path",
+              "value": "/auth"
+            },
+            {
+              "name": ":scheme",
+              "value": "https"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+            },
+            {
+              "name": "referer",
+              "value": "https://login.microsoftonline.com/"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"
+            }
+          ],
+          "queryString": [],
+          "cookies": [
+            "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZiZjU3YTkyLTUxYWItNGNmZi04ZGVkLWNjYWJmZmY1OTFlYSIsImV4cCI6MTc2MjMwMjQ4NH0.3fL624E5lDJLlY0g8H7w2z2ypyQk649E2d_7u6MIkHk; oauth_session_id=cc9336ef-42f9-442d-9739-b320f5e318b3"
+          ],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": "content-length",
+              "value": "138"
+            },
+            {
+              "name": "content-type",
+              "value": "text/html"
+            },
+            {
+              "name": "date",
+              "value": "Mon, 03 Nov 2025 07:53:47 GMT"
+            },
+            {
+              "name": "location",
+              "value": "https://kat-ui.cbp-dev.com/ui/auth"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 0,
+            "mimeType": "text/html"
+          },
+          "redirectURL": "https://kat-ui.cbp-dev.com/ui/auth",
+          "headersSize": -1,
+          "bodySize": -1,
+          "_transferSize": 216,
+          "_error": null,
+          "_fetchedViaServiceWorker": false
+        },
+        "serverIPAddress": "10.97.130.58",
+        "startedDateTime": "2025-11-03T07:53:47.260Z",
+        "time": 25.552999999945314
+      },
+      {
+        "_connectionId": "20067",
+        "_initiator": {
+          "type": "script",
+          "stack": {
+            "callFrames": [
+              {
+                "functionName": "",
+                "scriptId": "14",
+                "url": "https://login.microsoftonline.com/4cbf1e7f-4260-43da-bc01-353e4253bc5b/oauth2/v2.0/authorize?response_type=code&client_id=0e1cd69a-5c99-4344-b1ff-e9f8c3468b80&redirect_uri=https%3A%2F%2Fkat-ui.cbp-dev.com%2Foauth%2Fmicrosoft%2Fcallback&scope=openid+profile+email+User.Read+Chat.ReadBasic+OnlineMeetings.Read+OnlineMeetingTranscript.Read.All+offline_access&state=3JTBR1jfjQV7quQRhWw1dMCs9Q3fCX&nonce=nzIkjfGPgpP4B7xRAuNs",
+                "lineNumber": 3,
+                "columnNumber": 25
+              }
+            ]
+          }
+        },
+        "_priority": "VeryHigh",
+        "_resourceType": "document",
+        "cache": {},
+        "connection": "443",
+        "pageref": "page_15",
+        "request": {
+          "method": "GET",
+          "url": "https://kat-ui.cbp-dev.com/ui/auth",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": ":authority",
+              "value": "kat-ui.cbp-dev.com"
+            },
+            {
+              "name": ":method",
+              "value": "GET"
+            },
+            {
+              "name": ":path",
+              "value": "/ui/auth"
+            },
+            {
+              "name": ":scheme",
+              "value": "https"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+            },
+            {
+              "name": "referer",
+              "value": "https://login.microsoftonline.com/"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"
+            }
+          ],
+          "queryString": [],
+          "cookies": [
+            "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZiZjU3YTkyLTUxYWItNGNmZi04ZGVkLWNjYWJmZmY1OTFlYSIsImV4cCI6MTc2MjMwMjQ4NH0.3fL624E5lDJLlY0g8H7w2z2ypyQk649E2d_7u6MIkHk; oauth_session_id=cc9336ef-42f9-442d-9739-b320f5e318b3"
+          ],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": "cache-control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "name": "content-type",
+              "value": "text/html; charset=UTF-8"
+            },
+            {
+              "name": "date",
+              "value": "Mon, 03 Nov 2025 07:53:47 GMT"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 6045,
+            "mimeType": "text/html",
+            "text": "<!DOCTYPE html>\n<html lang=\"fr\">\n\n<head>\n  <meta charset=\"utf-8\" />\n  <meta property=\"csp-nonce\" content=\"1dcb9cc87177b3a19cd65068ae580733\" />\n  <link rel=\"shortcut icon\" href=\"/ui/favicon.ico\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <meta name=\"theme-color\" content=\"#001641\" />\n  <meta property=\"og:image\" content=\"/social-card.jpg\">\n  <meta property=\"og:image:secure_url\" content=\"/social-card.jpg\" />\n  <meta name=\"twitter:image\" content=\"/social-card.jpg\">\n\n  <!-- Disable Chrome translate option -->\n  <meta name=\"google\" content=\"notranslate\" />\n  <meta name=\"description\" content=\"Bienvenue sur votre chat d'entreprise.\" />\n  <link rel=\"apple-touch-icon\" href=\"icons-192.png\" />\n\n  <link rel=\"manifest\" href=\"/ui/manifest.json\" />\n\n  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n  <link\n    href=\"https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap\"\n    rel=\"stylesheet\">\n\n  <title>Kat</title>\n\n  <style>\n    body {\n      margin: 0;\n      background: #001641;\n    }\n\n    .fallback {\n      width: 100vw;\n      min-height: 100vh;\n      overflow: auto;\n      display: flex;\n      flex-direction: row;\n      justify-content: center;\n      align-items: center;\n      font-family: 'Poppins';\n    }\n\n    .browsers {\n      padding: 2rem;\n    }\n\n    .browsers-matter>div {\n      background: white;\n      color: #001641;\n      border-radius: 4px;\n    }\n\n    .browsers {\n      display: none;\n    }\n\n    .browsers-matter>div {\n      padding: 32px;\n    }\n\n    .browser-title {\n      text-transform: uppercase;\n    }\n\n    .browsers-items {\n      display: flex;\n      flex-direction: row;\n    }\n\n    .browser-item {\n      display: flex;\n      flex-direction: column;\n      flex: 1;\n      padding: 16px;\n      text-decoration: none;\n      color: inherit;\n    }\n\n    .browser-logo {\n      width: 100px;\n      height: 100px;\n      background-size: 100px;\n      background-repeat: no-repeat;\n      background-position: center center;\n      margin: 0 auto;\n    }\n\n    .browser-logo.chrome {\n      background-image: url('/ui/browsers/chrome.svg');\n    }\n\n    .browser-logo.firefox {\n      background-image: url('/ui/browsers/firefox.svg');\n    }\n\n    .browser-logo.edge {\n      background-image: url('/ui/browsers/edge.svg');\n    }\n\n    .browser-logo.safari {\n      background-image: url('/ui/browsers/safari.svg');\n    }\n\n    .browser-name {\n      text-align: center;\n      margin-top: 16px;\n    }\n\n    .browsers-matter {\n      margin: 0 auto;\n    }\n\n    .cookie-disabled {\n      display: none;\n      color: #fff;\n      text-align: center;\n    }\n\n    /** MOBILE **/\n    @media (max-width: 767px) {\n      .browsers-items {\n        flex-direction: column;\n      }\n    }\n\n    /** DESKTOP **/\n    @media (min-width: 1280px) {\n      .browsers-container {\n        display: flex;\n        flex-direction: row;\n        width: 100%;\n        max-width: 1250px;\n        margin-left: auto;\n        margin-right: auto;\n      }\n    }\n  </style>\n  <script type=\"module\" crossorigin src=\"/ui/index-DNBKrqMw.js\"></script>\n  <link rel=\"stylesheet\" crossorigin href=\"/ui/static/assets/asset-DkztLYpt.css\">\n</head>\n\n<body>\n  <noscript>\n    Vous devez activer JavaScript pour exécuter cette application.\n  </noscript>\n  <div id=\"root\">\n    <div class=\"fallback\">\n      <div class=\"browsers\">\n        <div class=\"browsers-container\">\n          <div class=\"browsers-matter\">\n            <div>\n              <h1 class=\"browser-title\">\n                Incompatibilité\n              </h1>\n              <p>\n                Votre navigateur n'est pas compatible avec le site. Veuillez\n                vérifier que votre navigateur est à jour ou optez pour un\n                navigateur plus récent tel que :\n              </p>\n              <div class=\"browsers-items\">\n                <a href=\"https://www.google.com/chrome/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"browser-item\">\n                  <div class=\"browser-logo chrome\"></div>\n                  <div class=\"browser-name\">Chrome</div>\n                </a>\n\n                <a href=\"https://www.mozilla.org/firefox/new/\" target=\"_blank\" rel=\"noopener noreferrer\"\n                  class=\"browser-item\">\n                  <div class=\"browser-logo firefox\"></div>\n                  <div class=\"browser-name\">Firefox</div>\n                </a>\n\n                <a href=\"https://www.microsoft.com/windows/microsoft-edge\" target=\"_blank\" rel=\"noopener noreferrer\"\n                  class=\"browser-item\">\n                  <div class=\"browser-logo edge\"></div>\n                  <div class=\"browser-name\">Edge</div>\n                </a>\n\n                <a href=\"https://www.apple.com/safari/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"browser-item\">\n                  <div class=\"browser-logo safari\"></div>\n                  <div class=\"browser-name\">Safari</div>\n                </a>\n              </div>\n            </div>\n          </div>\n        </div>\n      </div>\n      <div class=\"cookie-disabled\">\n        <h4>Cookies désactivés</h4>\n        <p>\n          Les cookies sont désactivés dans votre navigateur. Veillez à ce\n          qu'ils soient activés, puis réessayez.\n        </p>\n      </div>\n    </div>\n  </div>\n\n  <script nonce=\"1dcb9cc87177b3a19cd65068ae580733\">\n    const userAgent = window.navigator.userAgent\n    if (\n      userAgent.indexOf('MSIE ') > -1 ||\n      !!userAgent.match(/Trident.*rv\\:11\\./) ||\n      (!!window.MSInputMethodContext && !!document.documentMode)\n    ) {\n      document.getElementsByClassName('browsers')[0].style.display = 'block'\n    } else if (!navigator.cookieEnabled) {\n      document.getElementsByClassName('cookie-disabled')[0].style.display =\n        'block'\n    }\n\n    window.config = {\n      \"environnement\": \"dev\",\n      \"websocket\": \"wss://kat-ui.cbp-dev.com\",\n    }\n  </script>\n</body>\n\n</html>"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": -1,
+          "_transferSize": 2027,
+          "_error": null,
+          "_fetchedViaServiceWorker": false
+        },
+        "serverIPAddress": "10.97.130.58",
+        "startedDateTime": "2025-11-03T07:53:47.285Z",
+        "time": 22.68099999992046
+      }
+    ]
+  }
+}

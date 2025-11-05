@@ -30,6 +30,7 @@ Developer & testing tools
 - Vitest / Jest — unit and integration tests
 - Playwright — end-to-end tests (extension & webapp flows)
 - OpenSpec — design and specification process for proposals
+- Node 22
 
 Key libraries / browser APIs
 
@@ -67,7 +68,7 @@ Auth flow (high-level)
 - Its OpenWebUI who manage the OIDC dance against EntraID.
 
 Data & tokens
-- Prefer bearer tokens stored in secure storage (chrome.storage.session when available) over persistent cookies. If OpenWebUI sets an `owui_token` cookie, the extension should treat it as ephemeral and exchange or copy into an in-extension session token instead of relying solely on cookie-based auth.
+- Prefer bearer tokens stored in secure storage (chrome.storage.session when available) over persistent cookies. If OpenWebUI sets an `token` cookie, the extension should treat it as ephemeral and exchange or copy into an in-extension session token instead of relying solely on cookie-based auth.
 - Token validation endpoint: GET <OPENWEBUI_BASE_URL>/api/v1/auths/ — call to validate session token and retrieve user metadata.
 
 ---

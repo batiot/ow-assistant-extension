@@ -17,6 +17,11 @@ export default defineManifest({
   permissions: [
     'sidePanel',
     'contentSettings',
+    'storage',
+    'cookies',
+  ],
+  host_permissions: [
+    'https://*/*',
   ],
   background: {
     service_worker: 'src/background/index.ts',

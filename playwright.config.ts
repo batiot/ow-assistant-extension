@@ -11,6 +11,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'html',
+  globalSetup: './test/e2e/global-setup.ts',
+  globalTeardown: './test/e2e/global-teardown.ts',
   use: {
     baseURL: 'chrome-extension://[id]/',
     trace: 'on-first-retry',

@@ -1,14 +1,44 @@
-# React + Vite + CRXJS
+# OpenWebUI Assistant Extension
 
-This template helps you quickly start developing Chrome extensions with React, TypeScript and Vite. It includes the CRXJS Vite plugin for seamless Chrome extension development.
+A Chrome extension that provides seamless integration with OpenWebUI, enabling AI-powered chat capabilities directly in your browser through popup and sidepanel interfaces.
 
 ## Features
 
-- React with TypeScript
-- TypeScript support
-- Vite build tool
-- CRXJS Vite plugin integration
-- Chrome extension manifest configuration
+- **SSO Authentication**: Secure login via Microsoft EntraID (Azure AD)
+- **Token Management**: Automatic token storage and validation with session/local storage fallback
+- **Dual UI**: Access chat through both popup and sidepanel interfaces
+- **Real-time Sync**: Auth state synchronized across all extension contexts
+- **OpenWebUI Integration**: Direct API integration with OpenWebUI backend
+- **TypeScript**: Full type safety throughout the codebase
+- **Modern Stack**: React 19, Vite 7, Chrome Manifest V3
+
+## Configuration
+
+Before using the extension, you need to configure the OpenWebUI base URL:
+
+1. Open the extension popup
+2. Navigate to Settings (or configuration UI)
+3. Enter your OpenWebUI instance URL (e.g., `https://your-openwebui.com`)
+4. Save the configuration
+
+The extension stores this configuration in `chrome.storage.local` and uses it for all API requests.
+
+## Authentication Flow
+
+The extension uses OAuth 2.0 flow with Microsoft EntraID:
+
+1. Click "Login" in popup or sidepanel
+2. A popup window opens with Microsoft login page
+3. Complete authentication with your Microsoft credentials
+4. Extension extracts the JWT token from the callback URL
+5. Token is validated against OpenWebUI's `/api/v1/auths/` endpoint
+6. Auth state is synchronized across all extension contexts
+
+### Token Storage
+
+- **Primary**: `chrome.storage.session` (persists during browser session)
+- **Fallback**: `chrome.storage.local` with AES-GCM encryption (persists across sessions)
+- Automatic cleanup on logout or token expiration
 
 ## Quick Start
 
@@ -34,9 +64,89 @@ npm run build
 
 ## Project Structure
 
-- `src/popup/` - Extension popup UI
-- `src/content/` - Content scripts
-- `manifest.config.ts` - Chrome extension manifest configuration
+```
+src/
+├── api/               # OpenWebUI API client
+│   ├── client.ts      # HTTP client with token injection
+│   ├── types.ts       # API request/response types
+│   └── index.ts       # Barrel export
+├── auth/              # Authentication module (archived)
+│   ├── service.ts     # AuthService singleton
+│   ├── storage.ts     # Token storage with encryption
+│   ├── types.ts       # Auth types and interfaces
+│   ├── crypto.ts      # Encryption utilities
+│   └── retry.ts       # Retry logic with backoff
+├── background/        # Service worker
+│   └── index.ts       # Background service with message handling
+├── components/        # Shared React components
+│   └── auth/          # Authentication UI components
+│       ├── AuthButton.tsx   # Login/Logout buttons
+│       ├── UserProfile.tsx  # User info display
+│       └── ErrorDisplay.tsx # Error message display
+├── config/            # Configuration management
+│   ├── manager.ts     # ConfigManager singleton
+│   └── types.ts       # Config types
+├── contexts/          # React contexts
+│   └── AuthContext.tsx # Auth state provider
+├── popup/             # Extension popup UI
+│   ├── App.tsx        # Popup main component
+│   ├── main.tsx       # Popup entry point
+│   └── index.html     # Popup HTML
+├── sidepanel/         # Extension sidepanel UI
+│   ├── App.tsx        # Sidepanel main component
+│   ├── main.tsx       # Sidepanel entry point
+│   └── index.html     # Sidepanel HTML
+└── content/           # Content scripts (future)
+```
+
+## Architecture
+
+### Authentication Module
+
+The authentication system is built as a modular, reusable component:
+
+- **AuthService**: Singleton service managing auth lifecycle
+- **TokenStorage**: Secure token persistence with encryption
+- **OAuth Flow**: Popup window with URL monitoring for callback detection
+- **State Management**: Event-based state changes broadcast to all contexts
+
+### Message Passing
+
+Communication between UI and background service:
+
+```typescript
+// From UI to Background
+chrome.runtime.sendMessage({ type: 'AUTH_LOGIN' })
+chrome.runtime.sendMessage({ type: 'AUTH_LOGOUT' })
+chrome.runtime.sendMessage({ type: 'AUTH_GET_STATE' })
+chrome.runtime.sendMessage({ type: 'API_REQUEST', payload: { endpoint, method, body } })
+
+// From Background to UI (broadcast)
+chrome.runtime.sendMessage({ type: 'AUTH_STATE_CHANGED', payload: authState })
+```
+
+### API Integration
+
+The OpenWebUI API client provides typed interfaces:
+
+```typescript
+import { createApiClient } from '@/api';
+
+// Create client (retrieves token from storage)
+const client = await createApiClient();
+
+// Make API calls
+const models = await client.getModels();
+const response = await client.chatCompletion({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+
+// Stream responses
+for await (const chunk of client.streamChatCompletion(request)) {
+  console.log(chunk);
+}
+```
 
 ## Testing
 
@@ -48,11 +158,14 @@ End-to-end tests use Playwright to validate the extension in a real browser envi
 - Sidepanel interaction
 - Content script injection
 - API mocking and integration
+- **Authentication flows with mock OpenWebUI server**
+
+#### Running Tests
 
 To run the tests:
 
 ```bash
-# Run all e2e tests
+# Run all e2e tests (includes mock server setup)
 npm run test:e2e
 
 # Run tests with UI mode
@@ -65,7 +178,66 @@ npm run test:e2e:debug
 npm run test:e2e:report
 ```
 
-### Writing Tests
+#### Authentication E2E Tests
+
+The authentication tests use a mock OpenWebUI server to test OAuth flows without requiring a real backend:
+
+**Test Coverage:**
+- **REQ-001: Login Flow** (5 scenarios)
+  - Successful OAuth login with token storage
+  - OAuth callback with Set-Cookie header
+  - Login button states during authentication
+  - UI transitions to authenticated state
+  - Token persistence in chrome.storage.session
+
+- **REQ-002: Logout Flow** (4 scenarios)
+  - Token clearing and UI reset
+  - Storage cleanup
+  - Logout button states
+  - Complete UI state reset
+
+- **REQ-003: Auth Persistence** (4 scenarios)
+  - Token persistence across popup sessions
+  - Cross-view synchronization (popup ↔ sidepanel)
+  - Logout propagation
+  - Login propagation
+
+- **REQ-004: Token Synchronization** (3 scenarios)
+  - Concurrent login race conditions
+  - Storage event propagation
+  - Immediate token updates across views
+
+- **REQ-005: Error Handling** (5 scenarios)
+  - Network errors during login
+  - Invalid token handling (401)
+  - Server errors (500)
+  - OAuth callback errors
+  - Network interruption during logout
+
+- **Token Expiration** (1 scenario)
+  - Expired token re-authentication
+
+**Mock Server:**
+The mock OpenWebUI server (`test/e2e/utils/mock-server.ts`) provides:
+- OAuth login endpoint with auto-redirect HTML
+- OAuth callback with Set-Cookie header (correct token flow)
+- Token validation endpoint (Bearer + cookie auth)
+- Configurable error modes: `none`, `network`, `invalid_token`, `server_error`
+- Request logging and inspection
+- Dynamic port allocation
+
+**Test Helpers:**
+The `AuthTestHelper` class (`test/e2e/utils/auth-helper.ts`) provides:
+- `openPopup()` / `openSidepanel()` - Open extension views
+- `clickLogin()` / `clickLogout()` - Trigger auth actions
+- `waitForAuthComplete()` - Wait for authentication
+- `waitForCallbackWithCookie()` - Monitor OAuth callback
+- `extractTokenFromCookie()` - Get token from browser cookies
+- `getStoredToken()` - Get token from chrome.storage
+- `verifyAuthenticatedState()` / `verifyUnauthenticatedState()` - State verification
+- `closeExtraWindows()` - Clean up OAuth popups
+
+#### Writing Tests
 
 Tests are located in `test/e2e/`. Each test file should:
 - Import test utilities from `test/e2e/utils/test-utils`
@@ -74,17 +246,34 @@ Tests are located in `test/e2e/`. Each test file should:
 
 Example test structure:
 ```typescript
-import { test, expect } from '../utils/test-utils';
-import { ExtensionHelper } from '../utils/extension-helper';
+import { test, expect } from '@playwright/test';
+import { AuthTestHelper } from './utils/auth-helper';
 
 test.describe('Feature Tests', () => {
-  test('should do something', async ({ context, extensionId }) => {
+  test('should handle authentication', async () => {
     const page = await context.newPage();
-    const helper = new ExtensionHelper(page, extensionId);
-    // Test implementation
+    const helper = new AuthTestHelper(page, context, extensionId);
+    
+    await helper.openPopup();
+    await helper.clickLogin();
+    await helper.waitForAuthComplete();
+    await helper.verifyAuthenticatedState();
   });
 });
 ```
+
+#### OAuth Flow Implementation
+
+The extension follows this OAuth flow (corrected from original design):
+
+1. User clicks "Login" → extension opens OAuth URL
+2. User authenticates → redirected to `/oauth/microsoft/callback?code=...`
+3. **Callback sets `Set-Cookie: token=eyJh...`** (not URL parameter!)
+4. Extension extracts token from cookie
+5. Extension stores token in `chrome.storage.session`
+6. Extension validates token via `/api/v1/auths/` (supports Bearer OR cookie)
+
+**Important:** The token is transmitted via `Set-Cookie` header in the OAuth callback response, NOT as a URL parameter. This matches real OpenWebUI behavior and prevents token exposure in browser history.
 
 ## Documentation
 

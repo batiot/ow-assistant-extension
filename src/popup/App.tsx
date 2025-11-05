@@ -1,22 +1,45 @@
-import crxLogo from '@/assets/crx.svg'
-import reactLogo from '@/assets/react.svg'
-import viteLogo from '@/assets/vite.svg'
-import HelloWorld from '@/components/HelloWorld'
-import './App.css'
+import { useAuth } from '@/contexts';
+import { LoginButton, LogoutButton, UserProfile, ErrorDisplay } from '@/components/auth';
+import './App.css';
 
 export default function App() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="app-container">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <a href="https://vite.dev" target="_blank" rel="noreferrer">
-        <img src={viteLogo} className="logo" alt="Vite logo" />
-      </a>
-      <a href="https://reactjs.org/" target="_blank" rel="noreferrer">
-        <img src={reactLogo} className="logo react" alt="React logo" />
-      </a>
-      <a href="https://crxjs.dev/vite-plugin" target="_blank" rel="noreferrer">
-        <img src={crxLogo} className="logo crx" alt="crx logo" />
-      </a>
-      <HelloWorld msg="Vite + React + CRXJS" />
+    <div className="app-container">
+      <div className="app-header">
+        <h1>OpenWebUI Assistant</h1>
+      </div>
+
+      <ErrorDisplay />
+
+      {isAuthenticated ? (
+        <div className="authenticated-view">
+          <UserProfile />
+          <LogoutButton />
+          <div className="features-placeholder">
+            <p>AI writing assistance features will appear here.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="unauthenticated-view">
+          <div className="login-prompt">
+            <p>Please log in to use the AI writing assistant.</p>
+          </div>
+          <LoginButton />
+        </div>
+      )}
     </div>
-  )
+  );
 }
