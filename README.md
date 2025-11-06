@@ -215,6 +215,36 @@ for await (const chunk of client.streamChatCompletion(request)) {
 
 ## Testing
 
+### Unit Tests
+
+Unit tests use Vitest to test isolated business logic and utilities. Unit tests are **fast** (<10s) and focus on pure functions without complex mocking.
+
+**What we unit test:**
+- Pure functions (theme resolution, validation, crypto)
+- Error handling logic
+- Business logic without dependencies
+
+**What we DON'T unit test:**
+- React components, contexts (use E2E tests)
+- Chrome API integrations (use E2E tests)
+- UI flows and rendering (use E2E tests)
+
+```bash
+# Run all unit tests
+npm run test:unit
+
+# Run tests in watch mode (for development)
+npm run test:unit:watch
+
+# Run tests with coverage report
+npm run test:unit:coverage
+
+# Open interactive test UI
+npm run test:unit:ui
+```
+
+For detailed guidance on when to write unit vs E2E tests, see [Unit Testing Guide](./docs/UNIT_TESTING.md).
+
 ### End-to-End Tests
 
 End-to-end tests use Playwright to validate the extension in a real browser environment. The tests cover:
