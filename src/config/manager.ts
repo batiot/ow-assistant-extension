@@ -1,8 +1,12 @@
 import type { ExtensionConfig, ConfigValidationResult } from './types';
 import { DEFAULT_CONFIG, CONFIG_STORAGE_KEY } from './types';
+import { getSettingsManager } from '@/settings';
 
 /**
  * Configuration manager for extension settings
+ * 
+ * NOTE: This class now delegates instance URL management to SettingsManager
+ * for backward compatibility during migration period.
  */
 export class ConfigManager {
   private static instance: ConfigManager;
@@ -19,12 +23,19 @@ export class ConfigManager {
 
   /**
    * Initialize configuration from storage
+   * 
+   * NOTE: After migration, this will use SettingsManager for instance URL
    */
   async initialize(): Promise<void> {
-    const stored = await chrome.storage.local.get(CONFIG_STORAGE_KEY);
-    if (stored[CONFIG_STORAGE_KEY]) {
-      this.config = { ...DEFAULT_CONFIG, ...stored[CONFIG_STORAGE_KEY] };
-    }
+    // Initialize SettingsManager first (handles migration)
+    const settingsManager = getSettingsManager();
+    await settingsManager.initialize();
+    
+    // Get instance URL from settings
+    const settings = settingsManager.getSettings();
+    this.config = {
+      openWebUIBaseUrl: settings.instanceUrl,
+    };
   }
 
   /**
@@ -36,9 +47,13 @@ export class ConfigManager {
 
   /**
    * Get OpenWebUI base URL
+   * 
+   * NOTE: Now delegates to SettingsManager for consistency
    */
   getOpenWebUIBaseUrl(): string {
-    return this.config.openWebUIBaseUrl;
+    const settingsManager = getSettingsManager();
+    const settings = settingsManager.getSettings();
+    return settings.instanceUrl;
   }
 
   /**

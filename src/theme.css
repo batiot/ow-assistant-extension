@@ -1,0 +1,62 @@
+/* Theme CSS Variables */
+:root[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e0e0e0;
+  
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  
+  --border-color: #e0e0e0;
+  --border-color-hover: #007bff;
+  
+  --accent-primary: #007bff;
+  --accent-hover: #0056b3;
+  --accent-disabled: #80bdff;
+  
+  --error-bg: #fee;
+  --error-text: #c00;
+  --error-border: #fcc;
+  
+  --success-bg: #efe;
+  --success-text: #060;
+  --success-border: #cfc;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --bg-tertiary: #333333;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+  
+  --border-color: #404040;
+  --border-color-hover: #007bff;
+  
+  --accent-primary: #007bff;
+  --accent-hover: #0056b3;
+  --accent-disabled: #004085;
+  
+  --error-bg: #3a1a1a;
+  --error-text: #ff6b6b;
+  --error-border: #5a2a2a;
+  
+  --success-bg: #1a3a1a;
+  --success-text: #6bff6b;
+  --success-border: #2a5a2a;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Apply theme colors globally */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}

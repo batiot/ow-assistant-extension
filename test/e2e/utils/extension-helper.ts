@@ -1,4 +1,29 @@
-import { Page } from '@playwright/test';
+import { Page, BrowserContext } from '@playwright/test';
+
+/**
+ * Get extension ID from installed extensions
+ */
+export async function getExtensionId(context: BrowserContext): Promise<string> {
+  const extensionPages = context.backgroundPages();
+  if (extensionPages.length === 0) {
+    // Try to wait for background page
+    const backgroundPage = await context.waitForEvent('backgroundpage', { timeout: 5000 });
+    const extensionId = backgroundPage.url().split('/')[2];
+    return extensionId;
+  }
+  const extensionId = extensionPages[0].url().split('/')[2];
+  return extensionId;
+}
+
+/**
+ * Load extension context
+ */
+export async function loadExtension(context: BrowserContext): Promise<void> {
+  // Extension is already loaded by test config, just wait for it
+  await context.waitForEvent('backgroundpage', { timeout: 5000 }).catch(() => {
+    // Background page might already exist
+  });
+}
 
 /**
  * Helper functions for common extension testing operations

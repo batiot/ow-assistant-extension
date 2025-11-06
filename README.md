@@ -5,26 +5,50 @@ A Chrome extension that provides seamless integration with OpenWebUI, enabling A
 ## Features
 
 - **SSO Authentication**: Secure login via Microsoft EntraID (Azure AD)
+- **User Settings**: Configurable theme, language, and instance URL via dedicated options page
+- **Theme Support**: Light, dark, and system-auto themes with instant switching
+- **Multi-language**: English and French interface support
 - **Token Management**: Automatic token storage and validation with session/local storage fallback
 - **Dual UI**: Access chat through both popup and sidepanel interfaces
-- **Real-time Sync**: Auth state synchronized across all extension contexts
+- **Real-time Sync**: Settings and auth state synchronized across all extension contexts
 - **OpenWebUI Integration**: Direct API integration with OpenWebUI backend
 - **TypeScript**: Full type safety throughout the codebase
 - **Modern Stack**: React 19, Vite 7, Chrome Manifest V3
 
 ## Configuration
 
+### User Settings
+
+The extension provides a dedicated settings page accessible via:
+- Right-click the extension icon → "Options"
+- Chrome extensions page → Extension details → "Extension options"
+
+**Available Settings:**
+
+1. **Theme**: Choose your preferred color scheme
+   - Light mode
+   - Dark mode
+   - System (auto-detects OS preference)
+
+2. **Language**: Select interface language
+   - English (en)
+   - Français (fr)
+
+3. **OpenWebUI Instance URL**: Configure your OpenWebUI server
+   - Enter the full URL (e.g., `https://your-openwebui.com`)
+   - Real-time validation with helpful error messages
+   - Device-specific (doesn't sync across devices for security)
+
+Settings are automatically saved to:
+- `chrome.storage.sync`: Theme and language (syncs across your devices)
+- `chrome.storage.local`: Instance URL (device-specific)
+
 ### OpenWebUI Base URL
 
-The extension needs to know your OpenWebUI instance URL. This can be configured in three ways:
-
 **For End Users:**
-1. Open the extension popup
-2. Navigate to Settings (or configuration UI - *coming soon*)
-3. Enter your OpenWebUI instance URL (e.g., `https://your-openwebui.com`)
-4. Save the configuration
-
-The extension stores this in `chrome.storage.local`.
+1. Right-click extension icon → "Options"
+2. Enter your OpenWebUI instance URL in the Connection section
+3. Click "Save Changes"
 
 **For Production Builds (CI/CD):**
 
@@ -99,7 +123,7 @@ src/
 │   ├── client.ts      # HTTP client with token injection
 │   ├── types.ts       # API request/response types
 │   └── index.ts       # Barrel export
-├── auth/              # Authentication module (archived)
+├── auth/              # Authentication module
 │   ├── service.ts     # AuthService singleton
 │   ├── storage.ts     # Token storage with encryption
 │   ├── types.ts       # Auth types and interfaces
@@ -113,10 +137,16 @@ src/
 │       ├── UserProfile.tsx  # User info display
 │       └── ErrorDisplay.tsx # Error message display
 ├── config/            # Configuration management
-│   ├── manager.ts     # ConfigManager singleton
+│   ├── manager.ts     # ConfigManager (delegates to SettingsManager)
 │   └── types.ts       # Config types
 ├── contexts/          # React contexts
-│   └── AuthContext.tsx # Auth state provider
+│   ├── AuthContext.tsx     # Auth state provider
+│   └── SettingsContext.tsx # Settings state provider
+├── settings/          # User settings management
+│   ├── manager.ts     # SettingsManager singleton
+│   ├── types.ts       # Settings types
+│   ├── theme.ts       # Theme utilities
+│   └── index.ts       # Barrel export
 ├── popup/             # Extension popup UI
 │   ├── App.tsx        # Popup main component
 │   ├── main.tsx       # Popup entry point
@@ -124,6 +154,12 @@ src/
 ├── sidepanel/         # Extension sidepanel UI
 │   ├── App.tsx        # Sidepanel main component
 │   ├── main.tsx       # Sidepanel entry point
+│   └── index.html     # Sidepanel HTML
+├── options/           # Extension options page
+│   ├── App.tsx        # Settings UI component
+│   ├── main.tsx       # Options entry point
+│   └── index.html     # Options HTML
+├── theme.css          # Global theme CSS variables
 │   └── index.html     # Sidepanel HTML
 └── content/           # Content scripts (future)
 ```
@@ -188,6 +224,10 @@ End-to-end tests use Playwright to validate the extension in a real browser envi
 - Content script injection
 - API mocking and integration
 - **Authentication flows with mock OpenWebUI server**
+- **Settings persistence and synchronization**
+- **Theme switching and validation**
+
+For detailed information about the E2E testing infrastructure, common patterns, and troubleshooting, see [E2E Testing Guide](./docs/E2E_TESTING.md).
 
 #### Running Tests
 
@@ -266,6 +306,69 @@ The `AuthTestHelper` class (`test/e2e/utils/auth-helper.ts`) provides:
 - `verifyAuthenticatedState()` / `verifyUnauthenticatedState()` - State verification
 - `closeExtraWindows()` - Clean up OAuth popups
 
+#### Test Infrastructure
+
+**Headless Chrome with Extension Support:**
+
+The test setup uses `chromium.launchPersistentContext` with `--headless=new` flag to enable extension loading in headless mode. This is critical for CI/CD environments without display servers.
+
+```typescript
+// test/e2e/utils/test-utils.ts
+const shouldHeadless = Boolean(process.env.CI) || !process.env.DISPLAY;
+const headlessArgs = shouldHeadless ? ['--headless=new'] : [];
+
+const context = await chromium.launchPersistentContext(chromeDataDir, {
+  headless: shouldHeadless,
+  channel: 'chromium',
+  ignoreDefaultArgs: [
+    '--disable-component-extensions-with-background-pages',
+    '--disable-extensions',
+  ],
+  args: [
+    ...headlessArgs,
+    '--no-sandbox',
+    `--disable-extensions-except=${pathToExtension}`,
+    `--load-extension=${pathToExtension}`,
+  ],
+});
+```
+
+**Extension ID Detection:**
+
+The tests poll for the extension ID from service workers (Manifest V3) or background pages (Manifest V2):
+
+```typescript
+const waitForExtensionId = async (timeout = 30000) => {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    // Check service workers (MV3)
+    const sw = context.serviceWorkers().find(w => 
+      w.url().startsWith('chrome-extension://')
+    );
+    if (sw) {
+      const match = sw.url().match(/^chrome-extension:\/\/([^\/]+)/);
+      if (match && match[1]) return match[1];
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return undefined;
+};
+```
+
+**Test Fixtures:**
+
+Custom fixtures provide `context` (browser) and `extensionId` to all tests:
+
+```typescript
+import { test, expect } from './utils/test-utils';
+
+test('my test', async ({ context, extensionId }) => {
+  const page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
+  // ... test code
+});
+```
+
 #### Writing Tests
 
 Tests are located in `test/e2e/`. Each test file should:
@@ -275,11 +378,11 @@ Tests are located in `test/e2e/`. Each test file should:
 
 Example test structure:
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from './utils/test-utils';
 import { AuthTestHelper } from './utils/auth-helper';
 
 test.describe('Feature Tests', () => {
-  test('should handle authentication', async () => {
+  test('should handle authentication', async ({ context, extensionId }) => {
     const page = await context.newPage();
     const helper = new AuthTestHelper(page, context, extensionId);
     
@@ -306,6 +409,10 @@ The extension follows this OAuth flow (corrected from original design):
 
 ## Documentation
 
+- [E2E Testing Guide](./docs/E2E_TESTING.md) - Comprehensive guide to E2E testing infrastructure and patterns
+- [Settings Implementation Bugs](./docs/SETTINGS_BUGS.md) - Known issues and fixes for settings feature
+- [API Documentation](./docs/API.md) - API client usage and patterns
+- [Authentication Hooks](./docs/AUTH_HOOKS.md) - Authentication system documentation
 - [React Documentation](https://reactjs.org/)
 - [Vite Documentation](https://vitejs.dev/)
 - [CRXJS Documentation](https://crxjs.dev/vite-plugin)
