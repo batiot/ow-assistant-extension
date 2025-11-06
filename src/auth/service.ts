@@ -34,6 +34,20 @@ export class AuthService {
   }
 
   /**
+   * Reset singleton instance (useful when config changes)
+   */
+  static resetInstance(): void {
+    AuthService.instance = undefined as any;
+  }
+
+  /**
+   * Update configuration (e.g., when base URL changes)
+   */
+  updateConfig(config: AuthConfig): void {
+    this.config = config;
+  }
+
+  /**
    * Initialize auth service and restore session if available
    */
   async initialize(): Promise<void> {

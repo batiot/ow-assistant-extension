@@ -49,3 +49,30 @@ THEN the system SHALL attempt automatic renewal
 AND maintain session continuity if successful
 AND prompt for re-authentication only if necessary
 
+### Requirement: Storage-Driven Initialization
+The background service worker SHALL reactively initialize authentication services in response to configuration changes.
+
+#### Scenario: Listen for Local Storage Changes
+WHEN the extension is running
+THEN the background worker SHALL have a `chrome.storage.onChanged` listener registered
+AND the listener SHALL filter for changes to the `local` storage area
+AND the listener SHALL specifically monitor the `user_settings_local` key
+
+#### Scenario: Reinitialize on URL Configuration
+WHEN the storage listener detects a new or changed instance URL
+AND the URL is valid (not empty or undefined)
+THEN the background worker SHALL:
+1. Log the URL change for debugging
+2. Call `AuthService.resetInstance()` to clear the singleton
+3. Create a new instance with `AuthService.getInstance({ baseUrl: newUrl })`
+4. Call `initialize()` on the new instance
+5. Re-establish the `onAuthStateChanged` listener
+6. Log successful reinitialization
+
+#### Scenario: Handle Reinitialization Errors
+WHEN reinitialization fails due to an error
+THEN the background worker SHALL catch the error
+AND log the error with context information
+AND allow the extension to continue running
+AND the auth service SHALL remain unavailable until the issue is resolved
+

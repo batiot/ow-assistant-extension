@@ -4,30 +4,22 @@
 TBD - created by archiving change add-user-settings. Update Purpose after archive.
 ## Requirements
 ### Requirement: Settings Storage and Persistence
-The extension SHALL store user settings persistently using Chrome storage APIs with appropriate storage tiers for different setting types.
+The extension SHALL store user settings persistently using Chrome storage APIs with appropriate storage tiers for different setting types, AND changes SHALL trigger appropriate initialization in dependent services.
 
-#### Scenario: Store Theme and Language in Sync Storage
-WHEN a user changes theme or language preferences
-THEN the extension SHALL store these settings in `chrome.storage.sync`
-AND the settings SHALL synchronize across the user's devices
-AND the storage SHALL use the key `user_settings_sync`
-
-#### Scenario: Store Instance URL in Local Storage
+#### Scenario: Store Instance URL in Local Storage (Enhanced)
 WHEN a user changes the OpenWebUI instance URL
 THEN the extension SHALL store the URL in `chrome.storage.local`
 AND the URL SHALL remain device-specific
 AND the storage SHALL use the key `user_settings_local`
+AND the storage change event SHALL trigger authentication service reinitialization
+AND the auth service SHALL become available for use without extension reload
 
-#### Scenario: Load Settings on Extension Startup
-WHEN the extension initializes in any context (popup, sidepanel, background)
-THEN the extension SHALL load settings from storage
-AND apply default values for any missing settings
-AND apply the theme immediately after loading
-
-#### Scenario: Persist Settings Across Extension Restarts
-WHEN a user restarts the browser or extension
-THEN all previously saved settings SHALL be restored
-AND the UI SHALL reflect the saved preferences immediately
+#### Scenario: Instance URL Change Propagation
+WHEN the instance URL is updated in settings
+THEN the change SHALL propagate via `chrome.storage.onChanged` events
+AND the background service worker SHALL detect the change
+AND dependent services (e.g., AuthService) SHALL reinitialize with the new URL
+AND all UI contexts SHALL reflect the updated configuration state
 
 ### Requirement: Settings Validation
 The extension SHALL validate all user settings before saving to prevent invalid configurations.
@@ -157,4 +149,20 @@ AND display all UI text in English
 WHEN a user selects French (fr) as their language
 THEN the extension SHALL display all UI text in French
 AND format dates and numbers according to French locale conventions
+
+### Requirement: Settings Change Notification
+The settings system SHALL notify dependent services when critical configuration changes occur.
+
+#### Scenario: Notify Background Services of URL Changes
+WHEN the instance URL changes in `user_settings_local`
+THEN a storage change event SHALL be fired
+AND the event SHALL contain both old and new values
+AND listeners in the background worker SHALL receive the event
+AND services SHALL react appropriately to the configuration change
+
+#### Scenario: Distinguish URL Changes from Other Setting Changes
+WHEN any setting in `user_settings_local` changes
+THEN listeners SHALL be able to distinguish instance URL changes from other changes
+AND listeners SHALL be able to compare old vs new URL values
+AND listeners SHALL only trigger reinitialization when the URL actually changed
 

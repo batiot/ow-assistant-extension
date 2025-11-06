@@ -14,6 +14,39 @@ chrome.runtime.onInstalled.addListener(async () => {
   await initializeServices();
 });
 
+// Listen for storage changes to reinitialize auth service when instance URL changes
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes['user_settings_local']) {
+    const newLocalSettings = changes['user_settings_local'].newValue;
+    const oldLocalSettings = changes['user_settings_local'].oldValue;
+    
+    // Check if instance URL changed
+    if (newLocalSettings?.instanceUrl !== oldLocalSettings?.instanceUrl) {
+      console.log('Instance URL changed, reinitializing auth service...');
+      const newUrl = newLocalSettings?.instanceUrl;
+      
+      if (newUrl) {
+        // Reset the singleton and create new instance with updated URL
+        AuthService.resetInstance();
+        authService = AuthService.getInstance({ baseUrl: newUrl });
+        authService.initialize().then(() => {
+          // Listen for auth state changes
+          authService!.onAuthStateChanged((state) => {
+            broadcastAuthState(state);
+          });
+          console.log('Auth service reinitialized with new URL:', newUrl);
+        }).catch(error => {
+          console.error('Failed to reinitialize auth service:', error);
+        });
+      } else {
+        // URL removed, clear auth service
+        authService = null;
+        console.log('Auth service cleared (no URL configured)');
+      }
+    }
+  }
+});
+
 async function initializeServices() {
   try {
     // Initialize configuration
@@ -31,6 +64,9 @@ async function initializeServices() {
         // Broadcast to all connected UIs
         broadcastAuthState(state);
       });
+    } else {
+      // Clear auth service if URL is removed
+      authService = null;
     }
   } catch (error) {
     console.error('Failed to initialize services:', error);
