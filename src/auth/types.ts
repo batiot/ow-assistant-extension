@@ -2,6 +2,8 @@
  * Authentication types and interfaces
  */
 
+import type { BackendConfig } from '@/api/types';
+
 export interface AuthToken {
   token: string;
   expiresAt: number;
@@ -21,6 +23,7 @@ export interface UserInfo {
 
 export interface AuthConfig {
   baseUrl: string;
+  backendConfig?: BackendConfig | null;
 }
 
 export enum AuthErrorType {

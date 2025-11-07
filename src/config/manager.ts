@@ -1,4 +1,5 @@
 import type { ExtensionConfig, ConfigValidationResult } from './types';
+import type { BackendConfig } from '@/api/types';
 import { DEFAULT_CONFIG, CONFIG_STORAGE_KEY } from './types';
 import { getSettingsManager } from '@/settings';
 
@@ -11,6 +12,7 @@ import { getSettingsManager } from '@/settings';
 export class ConfigManager {
   private static instance: ConfigManager;
   private config: ExtensionConfig = DEFAULT_CONFIG;
+  private backendConfig: BackendConfig | null = null;
 
   private constructor() {}
 
@@ -105,6 +107,27 @@ export class ConfigManager {
   async resetConfig(): Promise<void> {
     this.config = { ...DEFAULT_CONFIG };
     await chrome.storage.local.remove(CONFIG_STORAGE_KEY);
+  }
+
+  /**
+   * Cache backend configuration (in-memory only, not persisted)
+   */
+  cacheBackendConfig(config: BackendConfig | null): void {
+    this.backendConfig = config;
+  }
+
+  /**
+   * Get cached backend configuration
+   */
+  getBackendConfig(): BackendConfig | null {
+    return this.backendConfig;
+  }
+
+  /**
+   * Clear cached backend configuration
+   */
+  clearBackendConfig(): void {
+    this.backendConfig = null;
   }
 }
 

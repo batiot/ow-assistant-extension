@@ -1,5 +1,6 @@
 import { AuthService } from '@/auth';
 import { getConfigManager } from '@/config';
+import { getBackendConfig } from '@/api/client';
 
 // Background service worker
 let authService: AuthService | null = null;
@@ -26,20 +27,46 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       const newUrl = newLocalSettings?.instanceUrl;
       
       if (newUrl) {
-        // Reset the singleton and create new instance with updated URL
-        AuthService.resetInstance();
-        authService = AuthService.getInstance({ baseUrl: newUrl });
-        authService.initialize().then(() => {
-          // Listen for auth state changes
-          authService!.onAuthStateChanged((state) => {
-            broadcastAuthState(state);
-          });
-          console.log('Auth service reinitialized with new URL:', newUrl);
+        // Fetch backend config for new URL
+        const configManager = getConfigManager();
+        getBackendConfig(newUrl).then(backendConfig => {
+          // Clear and cache new backend config
+          configManager.clearBackendConfig();
+          configManager.cacheBackendConfig(backendConfig);
+          
+          if (backendConfig) {
+            console.log('Backend config refreshed:', {
+              authEnabled: backendConfig.features.auth,
+              providers: Object.keys(backendConfig.oauth.providers),
+              loginFormEnabled: backendConfig.features.enable_login_form,
+            });
+          }
+          
+          // Reset the singleton and create new instance with updated URL and config
+          // Only if auth is enabled (or config not available)
+          if (!backendConfig || backendConfig.features.auth) {
+            AuthService.resetInstance();
+            authService = AuthService.getInstance({ baseUrl: newUrl, backendConfig });
+            authService.initialize().then(() => {
+              // Listen for auth state changes
+              authService!.onAuthStateChanged((state) => {
+                broadcastAuthState(state);
+              });
+              console.log('Auth service reinitialized with new URL:', newUrl);
+            }).catch(error => {
+              console.error('Failed to reinitialize auth service:', error);
+            });
+          } else {
+            console.log('Authentication disabled by backend config');
+            authService = null;
+          }
         }).catch(error => {
-          console.error('Failed to reinitialize auth service:', error);
+          console.error('Failed to fetch backend config on URL change:', error);
         });
       } else {
-        // URL removed, clear auth service
+        // URL removed, clear auth service and config
+        const configManager = getConfigManager();
+        configManager.clearBackendConfig();
         authService = null;
         console.log('Auth service cleared (no URL configured)');
       }
@@ -53,17 +80,37 @@ async function initializeServices() {
     const configManager = getConfigManager();
     await configManager.initialize();
 
-    // Initialize auth service if configured
+    // Fetch and cache backend configuration
     const baseUrl = configManager.getOpenWebUIBaseUrl();
     if (baseUrl) {
-      authService = AuthService.getInstance({ baseUrl });
-      await authService.initialize();
+      console.log('Fetching backend configuration...');
+      const backendConfig = await getBackendConfig(baseUrl);
+      configManager.cacheBackendConfig(backendConfig);
       
-      // Listen for auth state changes
-      authService.onAuthStateChanged((state) => {
-        // Broadcast to all connected UIs
-        broadcastAuthState(state);
-      });
+      if (backendConfig) {
+        console.log('Backend config loaded:', {
+          authEnabled: backendConfig.features.auth,
+          providers: Object.keys(backendConfig.oauth.providers),
+          loginFormEnabled: backendConfig.features.enable_login_form,
+        });
+      } else {
+        console.warn('Backend config not available, using defaults');
+      }
+
+      // Initialize auth service only if auth is enabled (or config not available)
+      if (!backendConfig || backendConfig.features.auth) {
+        authService = AuthService.getInstance({ baseUrl, backendConfig });
+        await authService.initialize();
+        
+        // Listen for auth state changes
+        authService.onAuthStateChanged((state) => {
+          // Broadcast to all connected UIs
+          broadcastAuthState(state);
+        });
+      } else {
+        console.log('Authentication disabled by backend config');
+        authService = null;
+      }
     } else {
       // Clear auth service if URL is removed
       authService = null;

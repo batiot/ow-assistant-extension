@@ -11,7 +11,46 @@ import type {
   ModelsResponse,
   UserValidationResponse,
   ApiError,
+  BackendConfig,
 } from './types';
+
+/**
+ * Get backend configuration without authentication
+ * This endpoint is public and doesn't require a token
+ */
+export async function getBackendConfig(baseUrl: string): Promise<BackendConfig | null> {
+  const url = `${baseUrl.replace(/\/$/, '')}/api/config`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn('Backend /api/config endpoint not found, using defaults');
+        return null;
+      }
+      throw new Error(`Failed to fetch backend config: ${response.status}`);
+    }
+
+    const config = await response.json();
+    
+    // Validate config structure
+    if (!config || typeof config !== 'object') {
+      console.warn('Invalid backend config format, using defaults');
+      return null;
+    }
+
+    return config as BackendConfig;
+  } catch (error) {
+    console.error('Error fetching backend config:', error);
+    return null;
+  }
+}
 
 export class OpenWebUIClient {
   private baseUrl: string;

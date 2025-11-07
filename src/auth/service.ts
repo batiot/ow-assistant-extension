@@ -4,6 +4,12 @@ import { TokenStorage } from './storage';
 import { retryOperation, toAuthError } from './retry';
 
 /**
+ * Timeout for silent authentication attempts (2.5 seconds)
+ * After this time, silent auth is considered failed and visible popup is shown
+ */
+const SILENT_AUTH_TIMEOUT_MS = 2500;
+
+/**
  * Main authentication service
  */
 export class AuthService {
@@ -70,12 +76,56 @@ export class AuthService {
 
   /**
    * Start authentication flow
+   * 
+   * Attempts silent authentication first when appropriate (single provider, no form),
+   * falling back to visible popup if silent auth times out or is not applicable.
+   * 
+   * Silent authentication flow:
+   * 1. Check if already authenticated (early return)
+   * 2. If single provider + no form, attempt silent auth for 2.5s
+   * 3. On silent auth success, store token and return (no popup)
+   * 4. On silent auth timeout/failure, fall through to visible popup
+   * 
+   * Visible popup flow:
+   * - Multiple providers: show base URL for selection
+   * - Login form enabled: show base URL
+   * - Silent auth failed: show provider-specific URL
    */
   async login(): Promise<void> {
     try {
-      const authUrl = `${this.config.baseUrl}/oauth/microsoft/login`;
+      // Early return if already authenticated
+      if (this.isAuthenticated() && this.authState.token && this.isTokenValid(this.authState.token)) {
+        console.log('[Auth] Already authenticated, skipping login');
+        return;
+      }
+
+      // Determine the authentication URL based on backend config
+      const authUrl = this.determineAuthEntryPoint();
       
-      // Create authentication window
+      // Attempt silent authentication if appropriate
+      if (this.shouldAttemptSilentAuth()) {
+        const token = await this.attemptSilentAuth(authUrl);
+        
+        if (token) {
+          // Silent auth succeeded! Validate, store, and update state
+          const user = await this.validateToken(token.token);
+          await TokenStorage.saveToken(token);
+          
+          this.updateAuthState({
+            isAuthenticated: true,
+            token,
+            user,
+          });
+          
+          console.log('[Auth] Silent authentication completed successfully');
+          return; // Done, no popup needed
+        }
+        
+        // Silent auth timed out or failed, fall through to visible popup
+        console.log('[Auth] Falling back to visible popup');
+      }
+      
+      // Create visible authentication popup
       const authWindow = await chrome.windows.create({
         url: authUrl,
         type: 'popup',
@@ -90,8 +140,8 @@ export class AuthService {
         );
       }
 
-      // Wait for auth callback
-      const token = await this.waitForAuthCallback(authWindow.id);
+      // Wait for auth callback in popup window
+      const token = await this.waitForAuthCallback(authWindow.id, false);
       
       // Validate and store token
       const user = await this.validateToken(token.token);
@@ -173,9 +223,105 @@ export class AuthService {
   }
 
   /**
-   * Wait for authentication callback
+   * Determine if silent authentication should be attempted
+   * 
+   * Silent auth is attempted only when:
+   * - Backend config exists
+   * - Exactly one OAuth provider is configured
+   * - Login form is disabled
+   * 
+   * @returns true if silent auth should be attempted, false otherwise
    */
-  private async waitForAuthCallback(windowId: number): Promise<AuthToken> {
+  private shouldAttemptSilentAuth(): boolean {
+    const backendConfig = this.config.backendConfig;
+    if (!backendConfig) {
+      console.log('[Auth] No backend config, skipping silent auth');
+      return false;
+    }
+    
+    const providers = Object.keys(backendConfig.oauth.providers);
+    const hasForm = backendConfig.features.enable_login_form;
+    
+    const shouldAttempt = providers.length === 1 && !hasForm;
+    
+    if (shouldAttempt) {
+      console.log('[Auth] Single provider + no form, eligible for silent auth');
+    } else {
+      console.log('[Auth] Multiple providers or form enabled, skipping silent auth');
+    }
+    
+    return shouldAttempt;
+  }
+
+  /**
+   * Attempt silent authentication using a hidden tab
+   * 
+   * Creates a hidden browser tab to attempt OAuth authentication without
+   * showing UI to the user. If the user has an existing OAuth session,
+   * authentication completes silently. Otherwise, times out after 2.5s.
+   * 
+   * @param authUrl - The OAuth provider URL to load
+   * @returns AuthToken if successful, null if timeout or error
+   */
+  private async attemptSilentAuth(authUrl: string): Promise<AuthToken | null> {
+    console.log('[Auth] Attempting silent authentication');
+    
+    let hiddenTab: chrome.tabs.Tab | undefined;
+    
+    try {
+      // Create hidden tab (active: false means not visible/focused)
+      hiddenTab = await chrome.tabs.create({
+        url: authUrl,
+        active: false,
+      });
+      
+      if (!hiddenTab || !hiddenTab.id) {
+        console.warn('[Auth] Failed to create hidden tab for silent auth');
+        return null;
+      }
+      
+      // Race between callback and timeout
+      const result = await Promise.race([
+        this.waitForAuthCallback(hiddenTab.id, true), // true = silent mode
+        new Promise<null>((resolve) => 
+          setTimeout(() => {
+            console.log('[Auth] Silent auth timeout after', SILENT_AUTH_TIMEOUT_MS, 'ms');
+            resolve(null);
+          }, SILENT_AUTH_TIMEOUT_MS)
+        ),
+      ]);
+      
+      if (result) {
+        console.log('[Auth] Silent authentication succeeded');
+      } else {
+        console.log('[Auth] Silent auth timed out, will show popup');
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.warn('[Auth] Silent auth error:', error);
+      return null;
+    } finally {
+      // Always clean up hidden tab
+      if (hiddenTab?.id) {
+        try {
+          await chrome.tabs.remove(hiddenTab.id);
+        } catch (e) {
+          // Tab might already be closed, ignore error
+        }
+      }
+    }
+  }
+
+  /**
+   * Wait for authentication callback
+   * 
+   * @param contextId - Window ID or Tab ID to monitor
+   * @param isSilent - If true, monitoring a hidden tab; if false, monitoring a popup window
+   * @returns Promise that resolves with AuthToken on success
+   */
+  private async waitForAuthCallback(contextId: number, isSilent: boolean = false): Promise<AuthToken> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         cleanup();
@@ -189,14 +335,21 @@ export class AuthService {
       }, 300000); // 5 minutes
 
       const tabUpdateListener = (
-        _tabId: number,
+        tabId: number,
         _changeInfo: any,
         tab: chrome.tabs.Tab
       ) => {
-        if (tab.windowId !== windowId || !tab.url) return;
+        // For silent mode (tab), check tabId directly
+        // For popup mode (window), check windowId
+        const isRelevantTab = isSilent 
+          ? tabId === contextId 
+          : tab.windowId === contextId;
+        
+        if (!isRelevantTab || !tab.url) return;
 
-        // Check for callback URL
-        if (tab.url.includes('/oauth/microsoft/callback')) {
+        // Check for OAuth callback URL pattern (generic for any provider)
+        // Matches: /oauth/{provider}/callback
+        if (tab.url.includes('/oauth/') && tab.url.includes('/callback')) {
           const url = new URL(tab.url);
           
           // Check for error
@@ -240,7 +393,8 @@ export class AuthService {
       };
 
       const windowRemovedListener = (removedWindowId: number) => {
-        if (removedWindowId === windowId) {
+        // Only listen for window removal in popup mode (not silent mode)
+        if (!isSilent && removedWindowId === contextId) {
           cleanup();
           reject(
             new AuthError(
@@ -252,15 +406,65 @@ export class AuthService {
         }
       };
 
+      const tabRemovedListener = (tabId: number) => {
+        // Only listen for tab removal in silent mode
+        if (isSilent && tabId === contextId) {
+          cleanup();
+          reject(
+            new AuthError(
+              AuthErrorType.USER_CANCELLED,
+              'Authentication tab closed',
+              false
+            )
+          );
+        }
+      };
+
       const cleanup = () => {
         clearTimeout(timeout);
         chrome.tabs.onUpdated.removeListener(tabUpdateListener);
         chrome.windows.onRemoved.removeListener(windowRemovedListener);
+        chrome.tabs.onRemoved.removeListener(tabRemovedListener);
       };
 
       chrome.tabs.onUpdated.addListener(tabUpdateListener);
       chrome.windows.onRemoved.addListener(windowRemovedListener);
+      chrome.tabs.onRemoved.addListener(tabRemovedListener);
     });
+  }
+
+  /**
+   * Determine the appropriate authentication entry point based on backend config
+   */
+  private determineAuthEntryPoint(): string {
+    const backendConfig = this.config.backendConfig;
+    
+    // If no backend config, use default Microsoft OAuth
+    if (!backendConfig) {
+      console.log('Using default Microsoft OAuth (no backend config)');
+      return `${this.config.baseUrl}/oauth/microsoft/login`;
+    }
+
+    const providers = backendConfig.oauth.providers;
+    const providerKeys = Object.keys(providers);
+    const enableLoginForm = backendConfig.features.enable_login_form;
+
+    // Multiple providers or login form enabled: show base URL for user selection
+    if (providerKeys.length > 1 || enableLoginForm) {
+      console.log('Multiple providers or login form enabled, showing base URL');
+      return this.config.baseUrl;
+    }
+
+    // Single provider and no login form: direct to provider OAuth
+    if (providerKeys.length === 1) {
+      const providerName = providerKeys[0];
+      console.log(`Single provider (${providerName}), direct auth`);
+      return `${this.config.baseUrl}/oauth/${providerName}/login`;
+    }
+
+    // No providers and no form: error case (fallback to base URL)
+    console.warn('No OAuth providers configured, falling back to base URL');
+    return this.config.baseUrl;
   }
 
   /**

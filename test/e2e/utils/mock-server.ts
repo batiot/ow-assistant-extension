@@ -25,6 +25,7 @@ export class MockOpenWebUIServer {
   private port: number = 0;
   private errorMode: ErrorMode = 'none';
   private requestLogs: RequestLog[] = [];
+  private oauthDelay: number = 100; // Default fast redirect for silent auth
 
   constructor() {
     this.app = express();
@@ -65,8 +66,10 @@ export class MockOpenWebUIServer {
     });
 
     // OAuth Microsoft login endpoint
-    this.app.get('/oauth/microsoft/login', (_req, res) => {
-      this.handleOAuthLogin(res);
+    this.app.get('/oauth/microsoft/login', (req, res) => {
+      // Support optional delay parameter in URL query, otherwise use configured delay
+      const delay = req.query.delay ? parseInt(req.query.delay as string, 10) : this.oauthDelay;
+      this.handleOAuthLogin(res, delay);
     });
 
     // OAuth callback endpoint
@@ -89,13 +92,26 @@ export class MockOpenWebUIServer {
         res.status(400).json({ error: 'Invalid error mode' });
       }
     });
+
+    // Test endpoint to set OAuth delay
+    this.app.post('/test/oauth-delay', express.json(), (req, res) => {
+      const { delay } = req.body;
+      if (typeof delay === 'number' && delay >= 0) {
+        this.setOAuthDelay(delay);
+        res.json({ success: true, delay: this.oauthDelay });
+      } else {
+        res.status(400).json({ error: 'Invalid delay value' });
+      }
+    });
   }
 
   /**
    * Handle OAuth login - returns HTML that auto-redirects
+   * Supports configurable delay parameter for testing timeouts
    */
-  private handleOAuthLogin(res: Response): void {
+  private handleOAuthLogin(res: Response, delay: number): void {
     const baseUrl = `http://localhost:${this.port}`;
+    
     const html = `
       <!DOCTYPE html>
       <html>
@@ -106,10 +122,10 @@ export class MockOpenWebUIServer {
           <h1>Mock Microsoft Login</h1>
           <p>Redirecting to authentication...</p>
           <script>
-            // Auto-redirect after 100ms to simulate OAuth flow
+            // Auto-redirect after ${delay}ms to simulate OAuth flow
             setTimeout(function() {
               window.location.href = '${baseUrl}/oauth/microsoft/callback?code=mock-auth-code-${Date.now()}';
-            }, 100);
+            }, ${delay});
           </script>
         </body>
       </html>
@@ -290,6 +306,21 @@ export class MockOpenWebUIServer {
   }
 
   /**
+   * Set OAuth redirect delay for testing silent auth timeout scenarios
+   * @param delayMs Delay in milliseconds (100ms = fast/silent auth, 3000ms = timeout)
+   */
+  setOAuthDelay(delayMs: number): void {
+    this.oauthDelay = delayMs;
+  }
+
+  /**
+   * Get current OAuth redirect delay
+   */
+  getOAuthDelay(): number {
+    return this.oauthDelay;
+  }
+
+  /**
    * Get request logs for debugging
    */
   getRequestLogs(): RequestLog[] {
@@ -304,10 +335,11 @@ export class MockOpenWebUIServer {
   }
 
   /**
-   * Reset server to default state (normal mode, clear logs)
+   * Reset server to default state (normal mode, clear logs, fast OAuth)
    */
   reset(): void {
     this.errorMode = 'none';
+    this.oauthDelay = 100;
     this.requestLogs = [];
   }
 }

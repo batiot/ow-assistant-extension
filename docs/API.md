@@ -4,6 +4,101 @@
 
 The API client provides a typed interface to interact with the OpenWebUI backend. It automatically handles authentication token injection, error handling, and streaming responses.
 
+## Backend Configuration
+
+### Get Backend Configuration
+
+Fetch backend configuration to determine available authentication methods and features. This endpoint is public and doesn't require authentication.
+
+```typescript
+import { getBackendConfig } from '@/api';
+
+const baseUrl = 'https://your-openwebui.com';
+const config = await getBackendConfig(baseUrl);
+
+if (config) {
+  console.log('Auth enabled:', config.features.auth);
+  console.log('Providers:', Object.keys(config.oauth.providers));
+  console.log('Login form:', config.features.enable_login_form);
+}
+```
+
+**Endpoint**: `GET /api/config`
+
+**Response Format**:
+```json
+{
+  "oauth": {
+    "providers": {
+      "microsoft": "microsoft",
+      "google": "google"
+    }
+  },
+  "features": {
+    "auth": true,
+    "enable_login_form": true
+  }
+}
+```
+
+**Field Descriptions**:
+- `oauth.providers`: Map of available OAuth providers (provider name → provider identifier)
+- `features.auth`: Whether authentication is required for this backend
+- `features.enable_login_form`: Whether username/password login form is available
+
+**Error Handling**:
+- Returns `null` if endpoint not found (404) or on network error
+- Logs warnings to console for debugging
+- Extension should use sensible defaults when config unavailable
+
+### Authentication Check
+
+Check if a user is currently authenticated and retrieve user information.
+
+```typescript
+import { createApiClient } from '@/api';
+
+try {
+  const client = await createApiClient();
+  const user = await client.validateToken();
+  console.log('Authenticated as:', user.name, user.email);
+} catch (error) {
+  console.log('Not authenticated or token invalid');
+}
+```
+
+**Endpoint**: `GET /api/v1/auths/`
+
+**Headers Required**:
+```
+Authorization: Bearer <token>
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "id": "16f44d75-3705-4adf-a83e-f5f6fbedf495",
+  "email": "user@example.com",
+  "name": "User Name",
+  "role": "admin",
+  "profile_image_url": "/user.png",
+  "token": "eyJhbGci...",
+  "token_type": "Bearer"
+}
+```
+
+**Field Descriptions**:
+- `id`: Unique user identifier (UUID)
+- `email`: User's email address
+- `name`: User's display name
+- `role`: User's role (e.g., "admin", "user")
+- `profile_image_url`: Path to user's profile image or base64-encoded image
+- `token`: JWT token (may be refreshed token)
+- `token_type`: Token type, always "Bearer"
+
+**Error Response** (401 Unauthorized):
+User is not authenticated or token is invalid/expired.
+
 ## Installation
 
 The API client is available through the `@/api` module:

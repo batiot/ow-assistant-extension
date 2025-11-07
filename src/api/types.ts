@@ -43,6 +43,34 @@ export interface UserValidationResponse {
   name: string;
   role: string;
   profile_image_url?: string;
+  token?: string;
+  token_type?: string;
+}
+
+/**
+ * OAuth provider configuration
+ * Maps provider name to provider identifier (e.g., { "microsoft": "microsoft" })
+ */
+export type OAuthProviders = Record<string, string>;
+
+/**
+ * Backend feature flags
+ */
+export interface BackendFeatures {
+  /** Whether authentication is required */
+  auth: boolean;
+  /** Whether login form is available */
+  enable_login_form: boolean;
+}
+
+/**
+ * Backend configuration from /api/config endpoint
+ */
+export interface BackendConfig {
+  oauth: {
+    providers: OAuthProviders;
+  };
+  features: BackendFeatures;
 }
 
 export class ApiError extends Error {

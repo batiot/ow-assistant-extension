@@ -233,4 +233,136 @@ export class AuthTestHelper {
       }
     }
   }
+
+  /**
+   * Count visible windows/pages (excludes hidden tabs)
+   * Useful for detecting popup windows during auth
+   */
+  async countVisiblePages(): Promise<number> {
+    const pages = this.context.pages();
+    let visibleCount = 0;
+    
+    for (const page of pages) {
+      try {
+        // Check if page is visible by trying to get viewport
+        const viewport = page.viewportSize();
+        if (viewport) {
+          visibleCount++;
+        }
+      } catch {
+        // Page not visible or closed
+      }
+    }
+    
+    return visibleCount;
+  }
+
+  /**
+   * Wait for a popup window to appear
+   * Returns the popup page when detected
+   */
+  async waitForPopupWindow(timeout: number = 5000): Promise<Page | null> {
+    const startTime = Date.now();
+    const initialPageCount = this.context.pages().length;
+    
+    while (Date.now() - startTime < timeout) {
+      const pages = this.context.pages();
+      
+      // Look for a new page that's not the main popup
+      for (const page of pages) {
+        if (page !== this.page) {
+          // Check if it's a popup window (different from the main extension popup)
+          const url = page.url();
+          if (url.includes('/oauth/')) {
+            return page;
+          }
+        }
+      }
+      
+      await this.page.waitForTimeout(100);
+    }
+    
+    return null;
+  }
+
+  /**
+   * Detect if silent authentication succeeded (no popup appeared)
+   * Returns true if auth completed without opening a visible window
+   */
+  async detectSilentAuthSuccess(timeout: number = 3000): Promise<boolean> {
+    const startTime = Date.now();
+    const initialPageCount = this.context.pages().length;
+    
+    // Wait for auth to complete OR timeout
+    while (Date.now() - startTime < timeout) {
+      // Check if authenticated
+      const isAuth = await this.isAuthenticated().catch(() => false);
+      if (isAuth) {
+        // Verify no extra pages were opened (no popup)
+        const finalPageCount = this.context.pages().length;
+        return finalPageCount === initialPageCount;
+      }
+      
+      // Check if popup appeared (silent auth failed)
+      const popupExists = await this.waitForPopupWindow(100);
+      if (popupExists) {
+        return false;
+      }
+      
+      await this.page.waitForTimeout(100);
+    }
+    
+    return false;
+  }
+
+  /**
+   * Check if currently authenticated
+   */
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const logoutButton = this.page.locator('button:has-text("Logout")');
+      await logoutButton.waitFor({ timeout: 500, state: 'visible' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Monitor context for hidden tabs during operation
+   * Returns array of tab URLs created during the monitoring period
+   */
+  async monitorHiddenTabs(durationMs: number): Promise<string[]> {
+    const hiddenTabs: string[] = [];
+    const startTime = Date.now();
+    const initialPages = new Set(this.context.pages());
+    
+    while (Date.now() - startTime < durationMs) {
+      const currentPages = this.context.pages();
+      
+      for (const page of currentPages) {
+        if (!initialPages.has(page)) {
+          // New page detected
+          try {
+            const url = page.url();
+            const viewport = page.viewportSize();
+            
+            // If page has no viewport or is hidden, it's a hidden tab
+            if (!viewport || viewport.width === 0) {
+              if (!hiddenTabs.includes(url)) {
+                hiddenTabs.push(url);
+              }
+            }
+          } catch {
+            // Page might be closed or inaccessible
+          }
+        }
+      }
+      
+      await this.page.waitForTimeout(50);
+    }
+    
+    return hiddenTabs;
+  }
 }
+
