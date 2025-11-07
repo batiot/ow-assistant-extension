@@ -159,40 +159,56 @@ test.describe('Settings - Options Page', () => {
     
     await page.waitForSelector('.theme-selector', { timeout: 5000 });
     
-    // Select light theme
+    // Select light theme - theme changes are applied immediately without save button
     await page.locator('input[type="radio"][value="light"]').click();
     
-    // Save
-    await page.locator('button.save-button').click();
-    await expect(page.locator('.success-banner')).toBeVisible();
+    // Wait a moment for the theme to be applied
+    await page.waitForTimeout(100);
     
-    // Verify theme applied
+    // Verify theme applied immediately
     const themeAttr = await page.evaluate(() => 
       document.documentElement.getAttribute('data-theme')
     );
     expect(themeAttr).toBe('light');
+    
+    // Verify it persisted to storage
+    const persistedTheme = await page.evaluate(async () => {
+      return new Promise<string>((resolve) => {
+        chrome.storage.local.get(['theme'], (result) => {
+          resolve(result.theme);
+        });
+      });
+    });
+    expect(persistedTheme).toBe('light');
   });
 
   test('should apply dark theme immediately', async ({ context, extensionId }) => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
     
-    await page.waitForSelector('.language-selector', { timeout: 5000 });
+    await page.waitForSelector('.theme-selector', { timeout: 5000 });
     
-    // Default should be English
-    await expect(page.locator('.language-selector')).toHaveValue('en');
+    // Select dark theme - theme changes are applied immediately without save button
+    await page.locator('input[type="radio"][value="dark"]').click();
     
-    // Change to French
-    await page.locator('.language-selector').selectOption('fr');
+    // Wait a moment for the theme to be applied
+    await page.waitForTimeout(100);
     
-    // Save changes
-    await page.locator('button.save-button').click();
-    await expect(page.locator('.success-banner')).toBeVisible();
+    // Verify theme applied immediately
+    const themeAttr = await page.evaluate(() => 
+      document.documentElement.getAttribute('data-theme')
+    );
+    expect(themeAttr).toBe('dark');
     
-    // Reload and verify
-    await page.reload();
-    await page.waitForSelector('.language-selector', { timeout: 5000 });
-    await expect(page.locator('.language-selector')).toHaveValue('fr');
+    // Verify it persisted to storage
+    const persistedTheme = await page.evaluate(async () => {
+      return new Promise<string>((resolve) => {
+        chrome.storage.local.get(['theme'], (result) => {
+          resolve(result.theme);
+        });
+      });
+    });
+    expect(persistedTheme).toBe('dark');
   });
 
   test('should select language and persist', async ({ context, extensionId }) => {
@@ -266,11 +282,12 @@ test.describe('Settings - Options Page', () => {
     
     await page.waitForSelector('.theme-selector', { timeout: 5000 });
     
-    // Change settings
+    // Change settings - theme and language save immediately without save button
     await page.locator('input[type="radio"][value="dark"]').click();
     await page.locator('.language-selector').selectOption('fr');
-    await page.locator('button.save-button').click();
-    await expect(page.locator('.success-banner')).toBeVisible();
+    
+    // Wait for saves to complete
+    await page.waitForTimeout(200);
     
     // Reload page
     await page.reload();
