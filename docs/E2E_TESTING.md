@@ -412,6 +412,119 @@ jobs:
 - `DISPLAY` - If set and not in CI, runs headed mode
 - `MOCK_SERVER_URL` - Set by global-setup.ts for test server
 
+## Test Suites
+
+### Current Test Coverage
+
+The E2E test suite includes comprehensive coverage across multiple areas:
+
+#### 1. Authentication Tests (`auth.e2e.ts` - currently skipped)
+- Login flow with OAuth
+- Logout flow
+- Token persistence
+- Auth state synchronization across contexts
+- Error handling
+- Token expiration
+
+#### 2. Silent Authentication Tests (`silent-auth.e2e.ts` - currently skipped)
+- Silent auth with immediate redirect
+- No visible tab during silent auth
+- Timeout and fallback to popup
+- Fallback popup properties
+- Multiple provider scenarios
+- Hidden tab cleanup
+
+#### 3. Backend Configuration Tests (`backend-config.e2e.ts` - NEW)
+- Single OAuth provider direct auth flow
+- Multiple OAuth providers selection
+- Login form enabled behavior
+- Auth disabled backend handling
+- Config fetch failure fallback
+- Instance URL change triggers refetch
+
+#### 4. Instance URL Configuration Tests (`instance-url.e2e.ts` - NEW)
+- Fresh install with no authentication
+- URL change clears auth state
+- URL validation (invalid format, HTTPS, HTTP)
+- URL removal handling
+- Trailing slash normalization
+
+#### 5. Network Resilience Tests (`network-resilience.e2e.ts` - NEW)
+- Fast OAuth response handling
+- Slow OAuth timeout behavior
+- Network interruption during OAuth
+- Network recovery after failure
+- Delayed callback arrival
+- Concurrent request handling
+- API timeout handling
+
+#### 6. Console and DevTools Tests (`console-devtools.e2e.ts` - NEW)
+- Console errors during extension load
+- Console errors during authentication
+- Console errors during settings changes
+- Service worker error monitoring
+- Tab cleanup errors
+- Console warnings logging
+- Network error handling
+- DevTools protocol errors
+
+#### 7. Session Detection Tests (`session-detection.e2e.ts`)
+- Extension startup with existing session
+- No session handling
+- Login with existing session
+- Session expiration
+- Token storage priority
+
+#### 8. Settings Tests (`settings.e2e.ts`)
+- Options page access
+- Settings sections display
+- Theme selection and persistence
+- Language selection
+- URL validation
+- Settings persistence
+- Reset functionality
+- Cross-context sync
+- Immediate save to storage
+
+#### 9. Extension Basic Tests (`extension.e2e.ts`)
+- Extension loading
+- API calls handling
+- Service worker initialization
+
+#### 10. Icon Badge Tests (`icon-badge.e2e.ts`)
+- Unauthenticated state badge
+- Auth state changes reflection
+- Storage changes affecting badge
+- Instance URL changes
+- Cross-context badge consistency
+
+#### 11. Auth Reinitialization Tests (`auth-reinit.e2e.ts`)
+- Auth service initialization after URL config
+- Auth service reinitialization on URL change
+- Auth service clearing on URL removal
+- Non-URL setting changes preservation
+
+#### 12. Mock Server Tests (`mock-server.e2e.ts`)
+- Mock server functionality
+- OAuth flow simulation
+- Backend config endpoint
+
+### Manual Testing Requirements
+
+Some test scenarios cannot be fully automated and require manual verification:
+
+#### Visual Inspection Required
+- Extension icon badge color and text
+- Popup window visibility and flashing
+- Hidden tab vs visible tab behavior
+- UI transitions and animations
+
+#### Real Integration Required
+- Real OAuth provider integration (Microsoft, Google, etc.)
+- Real OpenWebUI backend instance
+- Production network conditions
+- Cross-browser compatibility
+
 ## Next Steps
 
 ### Immediate Fixes Needed
@@ -435,14 +548,20 @@ jobs:
    - Add explicit waits before assertions
    - Add retry logic for flaky assertions
 
+5. **Unskip Pending Tests**
+   - Unskip `auth.e2e.ts` when authentication UI is complete
+   - Unskip `silent-auth.e2e.ts` when silent auth UI is connected
+
 ### Future Enhancements
 
 - Visual regression testing with Percy or similar
 - Performance testing (page load times, interaction responsiveness)
 - Accessibility testing with axe-core
 - Cross-browser testing (Firefox, Edge)
-- Network condition testing (slow 3G, offline)
+- Real OAuth provider integration tests
 - Test coverage reporting
+- Load testing with multiple concurrent users
+- Mobile browser testing
 
 ## References
 

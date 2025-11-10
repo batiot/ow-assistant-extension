@@ -9,7 +9,7 @@ import express, { Express, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import { Server } from 'http';
 
-export type ErrorMode = 'none' | 'network' | 'invalid_token' | 'server_error';
+export type ErrorMode = 'none' | 'network' | 'invalid_token' | 'server_error' | 'config_404';
 
 interface RequestLog {
   timestamp: number;
@@ -19,6 +19,16 @@ interface RequestLog {
   body?: any;
 }
 
+interface BackendConfig {
+  oauth: {
+    providers: Record<string, any>;
+  };
+  features: {
+    auth: boolean;
+    enable_login_form: boolean;
+  };
+}
+
 export class MockOpenWebUIServer {
   private app: Express;
   private server: Server | null = null;
@@ -26,6 +36,8 @@ export class MockOpenWebUIServer {
   private errorMode: ErrorMode = 'none';
   private requestLogs: RequestLog[] = [];
   private oauthDelay: number = 100; // Default fast redirect for silent auth
+  private backendConfig: BackendConfig | null = null;
+  private apiDelays: Map<string, number> = new Map();
 
   constructor() {
     this.app = express();
@@ -85,8 +97,8 @@ export class MockOpenWebUIServer {
     // Test endpoint to set error mode
     this.app.post('/test/error-mode', express.json(), (req, res) => {
       const { mode } = req.body;
-      if (mode && ['none', 'network', 'invalid_token', 'server_error'].includes(mode)) {
-        this.setErrorMode(mode as 'none' | 'network' | 'invalid_token' | 'server_error');
+      if (mode && ['none', 'network', 'invalid_token', 'server_error', 'config_404'].includes(mode)) {
+        this.setErrorMode(mode as ErrorMode);
         res.json({ success: true, mode: this.errorMode });
       } else {
         res.status(400).json({ error: 'Invalid error mode' });
@@ -101,6 +113,61 @@ export class MockOpenWebUIServer {
         res.json({ success: true, delay: this.oauthDelay });
       } else {
         res.status(400).json({ error: 'Invalid delay value' });
+      }
+    });
+
+    // Test endpoint to set backend config
+    this.app.post('/test/backend-config', express.json(), (req, res) => {
+      this.backendConfig = req.body;
+      res.json({ success: true, config: this.backendConfig });
+    });
+
+    // Test endpoint to set API delays
+    this.app.post('/test/api-delay', express.json(), (req, res) => {
+      const { endpoint, delay } = req.body;
+      if (typeof endpoint === 'string' && typeof delay === 'number' && delay >= 0) {
+        this.apiDelays.set(endpoint, delay);
+        res.json({ success: true, endpoint, delay });
+      } else {
+        res.status(400).json({ error: 'Invalid endpoint or delay value' });
+      }
+    });
+
+    // Backend config endpoint
+    this.app.get('/api/config', async (req, res) => {
+      // Check for config_404 error mode
+      if (this.errorMode === 'config_404') {
+        res.status(404).json({ error: 'Config endpoint not found' });
+        return;
+      }
+
+      // Apply delay if configured
+      const delay = this.apiDelays.get('/api/config') || 0;
+      if (delay > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      // Return configured backend config or default
+      if (this.backendConfig) {
+        res.json(this.backendConfig);
+      } else {
+        // Default single provider config
+        const baseUrl = `http://localhost:${this.port}`;
+        res.json({
+          oauth: {
+            providers: {
+              microsoft: {
+                client_id: 'default-client-id',
+                authorization_endpoint: `${baseUrl}/oauth/microsoft/login`,
+                redirect_uri: `${baseUrl}/oauth/microsoft/callback`,
+              },
+            },
+          },
+          features: {
+            auth: true,
+            enable_login_form: false,
+          },
+        });
       }
     });
   }
@@ -341,5 +408,36 @@ export class MockOpenWebUIServer {
     this.errorMode = 'none';
     this.oauthDelay = 100;
     this.requestLogs = [];
+    this.backendConfig = null;
+    this.apiDelays.clear();
+  }
+
+  /**
+   * Set backend config for testing different configurations
+   */
+  setBackendConfig(config: BackendConfig | null): void {
+    this.backendConfig = config;
+  }
+
+  /**
+   * Get current backend config
+   */
+  getBackendConfig(): BackendConfig | null {
+    return this.backendConfig;
+  }
+
+  /**
+   * Set delay for specific API endpoint
+   */
+  setApiDelay(endpoint: string, delayMs: number): void {
+    this.apiDelays.set(endpoint, delayMs);
+  }
+
+  /**
+   * Clear all API delays
+   */
+  clearApiDelays(): void {
+    this.apiDelays.clear();
+  }
   }
 }
