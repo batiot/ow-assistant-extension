@@ -300,6 +300,66 @@ test.describe('Settings - Options Page', () => {
     await expect(page.locator('button.save-button')).toBeEnabled();
   });
 
+  test('should save instance URL to correct storage location', async ({ context, extensionId }) => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+    
+    // Clear storage first
+    await page.evaluate(() => {
+      return Promise.all([
+        new Promise<void>((resolve) => chrome.storage.sync.clear(() => resolve())),
+        new Promise<void>((resolve) => chrome.storage.local.clear(() => resolve()))
+      ]);
+    });
+    
+    await page.waitForSelector('.url-input', { timeout: 5000 });
+    
+    const testUrl = 'https://test.openwebui.com';
+    
+    // Enter and save instance URL
+    await page.locator('.url-input').fill(testUrl);
+    await page.locator('.url-input').blur();
+    
+    // Click save
+    await page.locator('button.save-button').click();
+    
+    // Wait for save to complete
+    await page.waitForTimeout(500);
+    
+    // Verify URL is saved to chrome.storage.local with correct key structure
+    const storageData = await page.evaluate(() => {
+      return new Promise<any>((resolve) => {
+        chrome.storage.local.get(['user_settings_local'], (result) => {
+          resolve(result);
+        });
+      });
+    });
+    
+    // Verify storage structure
+    expect(storageData).toHaveProperty('user_settings_local');
+    expect(storageData.user_settings_local).toHaveProperty('instanceUrl', testUrl);
+    
+    // Verify URL is NOT in sync storage (should be local only)
+    const syncData = await page.evaluate(() => {
+      return new Promise<any>((resolve) => {
+        chrome.storage.sync.get(['user_settings_sync', 'user_settings_local'], (result) => {
+          resolve(result);
+        });
+      });
+    });
+    
+    expect(syncData).not.toHaveProperty('user_settings_local');
+    expect(syncData.user_settings_sync).not.toHaveProperty('instanceUrl');
+    
+    // Reload page and verify URL persists
+    await page.reload();
+    await page.waitForSelector('.url-input', { timeout: 5000 });
+    await page.waitForTimeout(500);
+    
+    const urlValue = await page.locator('.url-input').inputValue();
+    expect(urlValue).toBe(testUrl);
+  });
+
   test('should preserve settings on page reload', async ({ context, extensionId }) => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
@@ -466,4 +526,42 @@ test.describe('Settings - Options Page', () => {
     );
     expect(popupTheme).toBe('dark');
   });
+
+  test('should trigger background worker when instance URL is saved', async ({ context, extensionId }) => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+    
+    // Clear storage first
+    await page.evaluate(() => {
+      return Promise.all([
+        new Promise<void>((resolve) => chrome.storage.sync.clear(() => resolve())),
+        new Promise<void>((resolve) => chrome.storage.local.clear(() => resolve()))
+      ]);
+    });
+    
+    await page.waitForSelector('.url-input', { timeout: 5000 });
+    
+    const testUrl = 'https://background-test.openwebui.com';
+    
+    // Enter and save instance URL
+    await page.locator('.url-input').fill(testUrl);
+    await page.locator('button.save-button').click();
+    
+    // Wait for storage change event to propagate to background worker
+    await page.waitForTimeout(1500);
+    
+    // Open popup to verify auth service was initialized
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
+    await popupPage.waitForSelector('.app-container', { timeout: 5000 });
+    
+    // Verify no "not initialized" error
+    // (If background worker didn't pick up the URL, auth service won't be initialized)
+    const errorCount = await popupPage.locator('text=/not initialized|configure.*url/i').count();
+    expect(errorCount).toBe(0);
+    
+    await popupPage.close();
+    await page.close();
+  });
 });
+
