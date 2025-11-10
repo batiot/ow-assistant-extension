@@ -80,12 +80,13 @@ AND allow the extension to continue running
 AND the auth service SHALL remain unavailable until the issue is resolved
 
 ### Requirement: Session-Based Authentication Detection
-The system SHALL check for existing browser sessions by testing the authentication endpoint without credentials, enabling seamless integration with OpenWebUI HTTP-only cookie sessions.
+The system SHALL check for existing browser sessions by reading the token cookie explicitly using chrome.cookies API and sending it in the Cookie header, because extension fetch requests don't share the browser's cookie jar with web pages.
 
 #### Scenario: Check Session on Initialization
 WHEN the AuthService initializes
 AND no valid token exists in extension storage (or stored token is invalid)
-THEN the system SHALL call `GET ${baseUrl}/api/v1/auths/` without Authorization header
+THEN the system SHALL call `chrome.cookies.get()` to read the token cookie
+AND if a token cookie exists, SHALL include it in the Cookie header when calling `/api/v1/auths/`
 AND if the response is successful (200 OK), SHALL extract the token from response JSON
 AND store the token in extension storage
 AND update authentication state with user info from response
@@ -93,7 +94,8 @@ AND update authentication state with user info from response
 #### Scenario: Check Session Before OAuth Flow
 WHEN the user triggers login action
 AND no valid token exists in current auth state
-THEN the system SHALL call `GET ${baseUrl}/api/v1/auths/` without Authorization header
+THEN the system SHALL call `chrome.cookies.get()` to read the token cookie
+AND if a token cookie exists, SHALL include it in the Cookie header when calling `/api/v1/auths/`
 AND if a valid session exists (200 OK response)
 THEN the system SHALL extract token and user info from response
 AND authenticate without opening OAuth popup
@@ -101,7 +103,7 @@ AND update state to authenticated
 AND return immediately without entering OAuth flow
 
 #### Scenario: Session API Response Handling
-WHEN `/api/v1/auths/` is called without Authorization header
+WHEN `/api/v1/auths/` is called with the token cookie in the Cookie header
 AND a valid HTTP-only session cookie exists
 THEN the API SHALL return status 200 with JSON containing:
 - `id` (string): User unique identifier
@@ -126,19 +128,21 @@ THEN the system SHALL log the failure for debugging
 AND proceed with standard OAuth authentication flow
 AND not block the user from authenticating via OAuth
 
-#### Scenario: HTTP-Only Cookie Limitation
-WHEN the system attempts to check for authentication
-THEN the system SHALL NOT use `chrome.cookies.getAll()` to read the token cookie
-BECAUSE the cookie is HTTP-only and cannot be accessed via JavaScript
-AND instead SHALL call `GET ${baseUrl}/api/v1/auths/` without Authorization header
-AND rely on the browser to automatically send the HTTP-only cookie with the request
-AND rely on the API response to provide the token value in the `token` field
-AND the response SHALL include `token_type: "Bearer"` and `expires_at: null` for session-based tokens
+#### Scenario: Extension Context Cookie Access
+WHEN the system needs to check for authentication in an extension context
+THEN the system SHALL use `chrome.cookies.get()` to explicitly read the token cookie
+BECAUSE extension fetch requests don't share the browser's cookie jar with web pages
+AND `credentials: 'include'` does NOT automatically send HttpOnly cookies in extensions
+AND the cookie value SHALL be manually included in the Cookie header as `Cookie: token=${value}`
+WHEN calling `/api/v1/auths/`
+AND this approach works regardless of HttpOnly, Secure, and SameSite=Strict flags
+BECAUSE chrome.cookies API has privileged browser-level access
 
 #### Scenario: Unauthenticated Session Response
-WHEN `/api/v1/auths/` is called without Authorization header
+WHEN `/api/v1/auths/` is called with a Cookie header
 AND no valid HTTP-only session cookie exists
 OR the session cookie has expired
+OR the cookie value is invalid
 THEN the API SHALL return status 401 Unauthorized
 AND the response body SHALL contain `{ "detail": "Unauthorized" }`
 AND the system SHALL treat this as no existing session

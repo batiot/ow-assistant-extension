@@ -3,7 +3,7 @@ import { AuthService } from '../../../src/auth/service';
 import { TokenStorage } from '../../../src/auth/storage';
 import type { AuthConfig } from '../../../src/auth/types';
 
-// Mock chrome.storage
+// Mock chrome.storage and chrome.cookies
 const mockStorage = {
   session: {
     set: vi.fn().mockResolvedValue(undefined),
@@ -17,8 +17,13 @@ const mockStorage = {
   },
 };
 
+const mockCookies = {
+  get: vi.fn(),
+};
+
 global.chrome = {
   storage: mockStorage,
+  cookies: mockCookies,
 } as any;
 
 // Mock fetch globally
@@ -58,6 +63,11 @@ describe('AuthService - Session Detection', () => {
 
   describe('initialize() with session detection', () => {
     it('should check session when no stored token exists', async () => {
+      // Mock cookie found
+      mockCookies.get.mockResolvedValueOnce({
+        value: 'cookie-token-value',
+      });
+
       // Mock successful session response
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -68,14 +78,20 @@ describe('AuthService - Session Detection', () => {
       const service = AuthService.getInstance(mockConfig);
       await service.initialize();
 
-      // Verify fetch was called without Authorization header
+      // Verify cookie was read
+      expect(mockCookies.get).toHaveBeenCalledWith({
+        url: 'https://test.openwebui.com',
+        name: 'token',
+      });
+
+      // Verify fetch was called with Cookie header (not credentials: 'include')
       expect(global.fetch).toHaveBeenCalledWith(
         'https://test.openwebui.com/api/v1/auths/',
         expect.objectContaining({
           method: 'GET',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
+            'Cookie': 'token=cookie-token-value',
           },
         })
       );
@@ -127,6 +143,11 @@ describe('AuthService - Session Detection', () => {
     });
 
     it('should handle 401 Unauthorized session response', async () => {
+      // Mock cookie found
+      mockCookies.get.mockResolvedValueOnce({
+        value: 'invalid-cookie-token',
+      });
+
       // Mock 401 response (no session)
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
@@ -139,6 +160,21 @@ describe('AuthService - Session Detection', () => {
 
       // Verify token was not stored
       expect(TokenStorage.saveToken).not.toHaveBeenCalled();
+
+      // Verify state remains unauthenticated
+      const state = service.getState();
+      expect(state.isAuthenticated).toBe(false);
+    });
+
+    it('should skip session check when no cookie exists', async () => {
+      // Mock no cookie found
+      mockCookies.get.mockResolvedValueOnce(null);
+
+      const service = AuthService.getInstance(mockConfig);
+      await service.initialize();
+
+      // Verify fetch was not called (no cookie to send)
+      expect(global.fetch).not.toHaveBeenCalled();
 
       // Verify state remains unauthenticated
       const state = service.getState();
@@ -196,30 +232,27 @@ describe('AuthService - Session Detection', () => {
         status: 401,
       });
 
-      // Mock successful session check
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockSessionResponse,
-      });
+      // Mock no cookie (so no session check happens)
+      mockCookies.get.mockResolvedValueOnce(null);
 
       const service = AuthService.getInstance(mockConfig);
       await service.initialize();
 
-      // Should call fetch twice: once for validation, once for session check
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      // Should call fetch once for validation (session check skipped due to no cookie)
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-      // Verify new token was stored
-      expect(TokenStorage.saveToken).toHaveBeenCalledWith(
-        expect.objectContaining({
-          token: 'mock-jwt-token',
-        })
-      );
+      // Verify token was removed due to validation failure
+      expect(TokenStorage.removeToken).toHaveBeenCalled();
     });
   });
 
   describe('login() with session detection', () => {
     it('should check session before opening OAuth popup', async () => {
+      // Mock cookie found
+      mockCookies.get.mockResolvedValueOnce({
+        value: 'session-cookie-token',
+      });
+
       // Mock successful session response
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -230,12 +263,15 @@ describe('AuthService - Session Detection', () => {
       const service = AuthService.getInstance(mockConfig);
       await service.login();
 
-      // Verify fetch was called for session check
+      // Verify fetch was called for session check with Cookie header
       expect(global.fetch).toHaveBeenCalledWith(
         'https://test.openwebui.com/api/v1/auths/',
         expect.objectContaining({
           method: 'GET',
-          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'token=session-cookie-token',
+          },
         })
       );
 
@@ -252,6 +288,11 @@ describe('AuthService - Session Detection', () => {
     });
 
     it('should skip OAuth popup when session exists', async () => {
+      // Mock cookie found
+      mockCookies.get.mockResolvedValueOnce({
+        value: 'valid-session-cookie',
+      });
+
       // Mock chrome.windows.create to verify it's not called
       global.chrome.windows = {
         create: vi.fn(),
@@ -272,11 +313,8 @@ describe('AuthService - Session Detection', () => {
     });
 
     it('should proceed to OAuth when no session exists', async () => {
-      // Mock 401 response (no session)
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      });
+      // Mock no cookie
+      mockCookies.get.mockResolvedValueOnce(null);
 
       // Mock chrome APIs needed for OAuth flow
       global.chrome.windows = {
@@ -305,17 +343,11 @@ describe('AuthService - Session Detection', () => {
         // Expected to fail since we're not completing the OAuth flow
       });
 
-      // Wait a bit for session check and OAuth start
+      // Wait a bit for OAuth start
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Verify session check was attempted
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://test.openwebui.com/api/v1/auths/',
-        expect.objectContaining({
-          method: 'GET',
-          credentials: 'include',
-        })
-      );
+      // Verify no fetch call was made (no cookie to send)
+      expect(global.fetch).not.toHaveBeenCalled();
 
       // Verify popup was created (OAuth flow started)
       expect(global.chrome.windows.create).toHaveBeenCalled();
@@ -324,6 +356,11 @@ describe('AuthService - Session Detection', () => {
 
   describe('session response validation', () => {
     it('should extract complete user info from session response', async () => {
+      // Mock cookie found
+      mockCookies.get.mockResolvedValueOnce({
+        value: 'test-cookie-token',
+      });
+
       const fullResponse = {
         id: 'user-123',
         email: 'user@test.com',
@@ -353,6 +390,11 @@ describe('AuthService - Session Detection', () => {
     });
 
     it('should handle empty token string', async () => {
+      // Mock cookie found
+      mockCookies.get.mockResolvedValueOnce({
+        value: 'test-cookie',
+      });
+
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -365,7 +407,7 @@ describe('AuthService - Session Detection', () => {
       const service = AuthService.getInstance(mockConfig);
       await service.initialize();
 
-      // Should not store empty token
+      // Should not store empty token (validation should fail)
       expect(TokenStorage.saveToken).not.toHaveBeenCalled();
 
       const state = service.getState();

@@ -517,41 +517,76 @@ export class AuthService {
   }
 
   /**
+   * Get token cookie value using chrome.cookies API
+   * 
+   * This method uses the chrome.cookies API which has privileged access to cookies
+   * regardless of HttpOnly, Secure, and SameSite flags. This is necessary because:
+   * 1. The token cookie is HttpOnly and cannot be accessed via document.cookie
+   * 2. Extension fetch requests don't share the browser's cookie jar with web pages
+   * 
+   * @returns The token cookie value if found, null otherwise
+   */
+  private async getTokenCookie(): Promise<string | null> {
+    try {
+      const cookie = await chrome.cookies.get({
+        url: this.config.baseUrl,
+        name: 'token',
+      });
+
+      if (cookie) {
+        return cookie.value;
+      } else {
+        console.warn('[Auth] Token cookie not found');
+        return null;
+      }
+    } catch (error) {
+      console.error('[Auth] Error getting token cookie:', error);
+      return null;
+    }
+  }
+
+  /**
    * Extract token from callback
+   * 
+   * Uses chrome.cookies API to read the HttpOnly token cookie set by the backend
+   * after OAuth callback. Works regardless of cookie security flags.
    */
   private async extractTokenFromCallback(): Promise<AuthToken> {
-    // Get token from cookie after callback
-    const cookies = await chrome.cookies.getAll({
-      url: this.config.baseUrl,
-      name: 'token',
-    });
+    // Get token value using helper
+    const tokenValue = await this.getTokenCookie();
 
-    if (cookies.length === 0) {
+    if (!tokenValue) {
       throw new AuthError(
         AuthErrorType.AUTHENTICATION_FAILED,
         'No authentication token found in cookies'
       );
     }
 
-    const tokenCookie = cookies[0];
-    
-    // Calculate expiration (default to session if not specified)
-    const expiresAt = tokenCookie.expirationDate
-      ? tokenCookie.expirationDate * 1000
-      : Date.now() + 24 * 60 * 60 * 1000; // 24 hours default
+    // Get full cookie details for expiration
+    const cookie = await chrome.cookies.get({
+      url: this.config.baseUrl,
+      name: 'token',
+    });
+
+    // Calculate expiration (default to 24 hours if not specified)
+    const expiresAt = cookie?.expirationDate
+      ? cookie.expirationDate * 1000
+      : Date.now() + 24 * 60 * 60 * 1000;
 
     return {
-      token: tokenCookie.value,
+      token: tokenValue,
       expiresAt,
     };
   }
 
   /**
-   * Check for existing session by calling /api/v1/auths/ without Authorization header
+   * Check for existing session by reading token cookie and validating it
    * 
-   * This method tests if a valid HTTP-only session cookie exists. Since the cookie
-   * cannot be read directly (HttpOnly), we call the API endpoint and let the browser
-   * automatically send the cookie. If valid, the API returns the token in the response.
+   * IMPORTANT: In an extension context, fetch requests don't share the browser's
+   * cookie jar with web pages. Using `credentials: 'include'` does NOT automatically
+   * send HttpOnly cookies. We must:
+   * 1. Read the cookie explicitly using chrome.cookies.get()
+   * 2. Include it manually in the Cookie header
    * 
    * @returns AuthToken with token value and user info if session exists, null otherwise
    */
@@ -559,11 +594,21 @@ export class AuthService {
     try {
       console.log('[Auth] Checking for existing session...');
       
+      // Read the HttpOnly cookie using chrome.cookies API
+      const tokenValue = await this.getTokenCookie();
+      
+      if (!tokenValue) {
+        console.log('[Auth] No token cookie found for session check');
+        return null;
+      }
+
+      // Send the cookie explicitly in the Cookie header
+      // (credentials: 'include' doesn't work in extension context)
       const response = await fetch(`${this.config.baseUrl}/api/v1/auths/`, {
         method: 'GET',
-        credentials: 'include', // Important: includes HTTP-only cookies
         headers: {
           'Content-Type': 'application/json',
+          'Cookie': `token=${tokenValue}`,
         },
       });
 

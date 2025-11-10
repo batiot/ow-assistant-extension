@@ -19,9 +19,10 @@ export default defineManifest({
     'contentSettings',
     'storage',
     'cookies',
+    'http://localhost:8080/'
   ],
   host_permissions: [
-    'https://*/*',
+    'http://localhost:8080/*',
   ],
   background: {
     service_worker: 'src/background/index.ts',
