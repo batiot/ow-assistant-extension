@@ -67,9 +67,9 @@ test.describe('Mock Server Tests', () => {
     
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data).toHaveProperty('id', 'test-user-123');
+    expect(data).toHaveProperty('id', '16f44d75-3705-4adf-a83e-f5f6fbedf495');
     expect(data).toHaveProperty('name', 'Test User');
-    expect(data).toHaveProperty('email', 'test.user@example.com');
+    expect(data).toHaveProperty('email', 'user@example.com');
   });
 
   test('should validate token with cookie', async () => {

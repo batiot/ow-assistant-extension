@@ -199,29 +199,73 @@ export class MockOpenWebUIServer {
 
     // Check for invalid token mode or missing token
     if (this.errorMode === 'invalid_token' || !token) {
-      res.status(401).json({ error: 'Invalid or missing token' });
+      res.status(401).json({ detail: 'Not authenticated' });
       return;
     }
 
     // Validate token format (should contain 'test-' or be a valid JWT-like structure)
     if (!token.includes('test-') && !token.startsWith('eyJ')) {
-      res.status(401).json({ error: 'Invalid token format' });
+      res.status(401).json({ detail: 'Not authenticated' });
       return;
     }
 
-    // Return mock user data
-    const response: any = {
-      id: 'test-user-123',
-      email: 'test.user@example.com',
+    // Return mock user data matching real OpenWebUI API contract
+    const response = {
+      id: '16f44d75-3705-4adf-a83e-f5f6fbedf495',
+      email: 'user@example.com',
       name: 'Test User',
       role: 'user',
-      profile_image_url: 'https://example.com/avatar.jpg',
+      profile_image_url: '/user.png',
+      token: token,  // Always include token (matches real API behavior)
+      token_type: 'Bearer',
+      expires_at: null,  // Session-based token
+      permissions: {
+        workspace: {
+          models: false,
+          knowledge: false,
+          prompts: false,
+          tools: false,
+        },
+        sharing: {
+          public_models: false,
+          public_knowledge: false,
+          public_prompts: false,
+          public_tools: false,
+          public_notes: false,
+        },
+        chat: {
+          controls: true,
+          valves: true,
+          system_prompt: true,
+          params: true,
+          file_upload: true,
+          delete: true,
+          delete_message: true,
+          continue_response: true,
+          regenerate_response: true,
+          rate_response: true,
+          edit: true,
+          share: true,
+          export: true,
+          stt: true,
+          tts: true,
+          call: true,
+          multiple_models: true,
+          temporary: true,
+          temporary_enforced: false,
+        },
+        features: {
+          direct_tool_servers: false,
+          web_search: true,
+          image_generation: true,
+          code_interpreter: true,
+          notes: true,
+        },
+      },
+      bio: null,
+      gender: null,
+      date_of_birth: null,
     };
-
-    // If authenticated via cookie (not Bearer token), include token in response
-    if (cookieToken && !bearerToken) {
-      response.token = cookieToken;
-    }
 
     res.json(response);
   }

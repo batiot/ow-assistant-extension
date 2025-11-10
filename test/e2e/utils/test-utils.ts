@@ -17,6 +17,23 @@ export type TestFixtures = {
  */
 export const test = base.extend<TestFixtures>({
   context: async ({}, use) => {
+    // Ensure mock server is ready before launching extension
+    const mockServerUrl = process.env.MOCK_SERVER_URL;
+    if (!mockServerUrl) {
+      throw new Error('MOCK_SERVER_URL not set - global setup may have failed');
+    }
+    
+    // Verify mock server is responding
+    try {
+      const healthCheck = await fetch(`${mockServerUrl}/health`);
+      if (!healthCheck.ok) {
+        throw new Error(`Mock server health check failed: ${healthCheck.status}`);
+      }
+      console.log(`[Test Setup] Mock server ready at ${mockServerUrl}`);
+    } catch (error) {
+      throw new Error(`Mock server not accessible at ${mockServerUrl}: ${error}`);
+    }
+    
     const pathToExtension = path.resolve('dist');
     const chromeDataDir = path.resolve('test/e2e/tmp/chrome-data');
 
@@ -99,6 +116,31 @@ export const test = base.extend<TestFixtures>({
 
     // Store extension ID on context for later use
     (context as ExtensionBrowserContext)._extensionId = extensionId;
+
+    // Configure extension with mock server URL immediately after load
+    if (mockServerUrl) {
+      const page = await context.newPage();
+      try {
+        await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+        await page.evaluate((serverUrl) => {
+          return new Promise<void>((resolve) => {
+            chrome.storage.local.set({
+              user_settings_local: {
+                instanceUrl: serverUrl
+              }
+            }, () => {
+              console.log('[Test Setup] Configured instanceUrl:', serverUrl);
+              resolve();
+            });
+          });
+        }, mockServerUrl);
+        console.log(`[Test Setup] Extension configured with mock server: ${mockServerUrl}`);
+      } catch (error) {
+        console.warn('[Test Setup] Failed to configure extension:', error);
+      } finally {
+        await page.close();
+      }
+    }
 
     await use(context);
     await context.close();

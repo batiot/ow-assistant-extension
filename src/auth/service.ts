@@ -611,12 +611,19 @@ export class AuthService {
   private async validateToken(token: string): Promise<UserInfo> {
     try {
       return await retryOperation(async () => {
+        // Create AbortController with 5 second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         const response = await fetch(`${this.config.baseUrl}/api/v1/auths/`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new AuthError(
