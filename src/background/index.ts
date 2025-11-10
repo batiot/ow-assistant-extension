@@ -1,9 +1,26 @@
 import { AuthService } from '@/auth';
+import type { AuthState } from '@/auth';
 import { getConfigManager } from '@/config';
 import { getBackendConfig } from '@/api/client';
 
 // Background service worker
 let authService: AuthService | null = null;
+
+/**
+ * Update extension icon badge based on authentication state
+ */
+function updateIconBadge(authState: AuthState): void {
+  try {
+    if (!authState.isAuthenticated) {
+      chrome.action.setBadgeText({ text: '•' });
+      chrome.action.setBadgeBackgroundColor({ color: '#DC2626' });
+    } else {
+      chrome.action.setBadgeText({ text: '' });
+    }
+  } catch (error) {
+    console.error('Failed to update icon badge:', error);
+  }
+}
 
 // Initialize on startup
 chrome.runtime.onStartup.addListener(async () => {
@@ -51,14 +68,19 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
               // Listen for auth state changes
               authService!.onAuthStateChanged((state) => {
                 broadcastAuthState(state);
+                updateIconBadge(state);
               });
               console.log('Auth service reinitialized with new URL:', newUrl);
+              // Update badge with current state
+              updateIconBadge(authService!.getState());
             }).catch(error => {
               console.error('Failed to reinitialize auth service:', error);
             });
           } else {
             console.log('Authentication disabled by backend config');
             authService = null;
+            // Clear badge when auth is disabled
+            updateIconBadge({ isAuthenticated: false, token: null, user: null });
           }
         }).catch(error => {
           console.error('Failed to fetch backend config on URL change:', error);
@@ -69,6 +91,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         configManager.clearBackendConfig();
         authService = null;
         console.log('Auth service cleared (no URL configured)');
+        // Clear badge when URL is removed
+        updateIconBadge({ isAuthenticated: false, token: null, user: null });
       }
     }
   }
@@ -106,14 +130,22 @@ async function initializeServices() {
         authService.onAuthStateChanged((state) => {
           // Broadcast to all connected UIs
           broadcastAuthState(state);
+          updateIconBadge(state);
         });
+        
+        // Update badge with initial state
+        updateIconBadge(authService.getState());
       } else {
         console.log('Authentication disabled by backend config');
         authService = null;
+        // Clear badge when auth is disabled
+        updateIconBadge({ isAuthenticated: false, token: null, user: null });
       }
     } else {
       // Clear auth service if URL is removed
       authService = null;
+      // Clear badge when no URL configured
+      updateIconBadge({ isAuthenticated: false, token: null, user: null });
     }
   } catch (error) {
     console.error('Failed to initialize services:', error);

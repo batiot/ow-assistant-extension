@@ -28,7 +28,7 @@ Developer & testing tools
 
 - ESLint (with TypeScript rules) and Prettier — linting and formatting
 - Vitest / Jest — unit and integration tests
-- Playwright — end-to-end tests (extension & webapp flows)
+- Playwright — end-to-end tests (extension & webapp flows) with the new headless mode (see test-utils.ts)
 - OpenSpec — design and specification process for proposals
 - Node 22
 

@@ -15,7 +15,7 @@ export interface ConfigValidationResult {
  * Uses VITE_OPENWEBUI_BASE_URL from build-time environment
  */
 export const DEFAULT_CONFIG: ExtensionConfig = {
-  openWebUIBaseUrl: import.meta.env.VITE_OPENWEBUI_BASE_URL || '',
+  openWebUIBaseUrl: import.meta.env.VITE_OPENWEBUI_BASE_URL || 'http://localhost:8080/',
 };
 
 /**

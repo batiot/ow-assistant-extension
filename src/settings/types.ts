@@ -50,7 +50,7 @@ export interface SettingsValidationResult {
 export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'system',
   language: 'en',
-  instanceUrl: import.meta.env.VITE_OPENWEBUI_BASE_URL || '',
+  instanceUrl: import.meta.env.VITE_OPENWEBUI_BASE_URL || 'http://localhost:8080/',
 };
 
 /**

@@ -5,6 +5,7 @@ A Chrome extension that provides seamless integration with OpenWebUI, enabling A
 ## Features
 
 - **SSO Authentication**: Secure login via Microsoft EntraID (Azure AD)
+- **Visual Status Indicator**: Extension icon badge shows authentication status at a glance
 - **User Settings**: Configurable theme, language, and instance URL via dedicated options page
 - **Theme Support**: Light, dark, and system-auto themes with instant switching
 - **Multi-language**: English and French interface support
@@ -14,6 +15,14 @@ A Chrome extension that provides seamless integration with OpenWebUI, enabling A
 - **OpenWebUI Integration**: Direct API integration with OpenWebUI backend
 - **TypeScript**: Full type safety throughout the codebase
 - **Modern Stack**: React 19, Vite 7, Chrome Manifest V3
+
+## Quick Status Check
+
+The extension icon displays a small red badge (•) when you're not authenticated. This provides immediate visual feedback about your connection status without needing to open the extension.
+
+**Badge States:**
+- **No badge** = Authenticated and connected
+- **Red dot (•)** = Not authenticated or invalid token
 
 ## Configuration
 
@@ -447,6 +456,28 @@ The extension follows this OAuth flow (corrected from original design):
 - [Vite Documentation](https://vitejs.dev/)
 - [CRXJS Documentation](https://crxjs.dev/vite-plugin)
 - [Playwright Documentation](https://playwright.dev/)
+
+## Troubleshooting
+
+### Icon Badge Shows Red Dot
+
+The red badge indicates you're not authenticated or your token is invalid. To resolve:
+
+1. Click the extension icon to open the popup
+2. Click "Login" and complete the authentication flow
+3. If already logged in, try logging out and back in
+4. Verify your OpenWebUI instance URL is configured correctly (right-click icon → Options)
+
+The badge will automatically clear when you successfully authenticate.
+
+### Connection Issues
+
+If you see connection errors:
+
+1. Check the red badge - if present, you need to authenticate
+2. Verify your instance URL is correct in Settings (Options page)
+3. Ensure the OpenWebUI server is running and accessible
+4. Check browser console for detailed error messages
 
 ## Chrome Extension Development Notes
 
