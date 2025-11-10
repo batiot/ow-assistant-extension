@@ -91,29 +91,70 @@ await authService.logout();
 
 ## Authentication Flow
 
-1. **Initial Authentication**
-   - User triggers login action
-   - Extension opens OAuth window at `/oauth/microsoft/login`
-   - Redirects to Microsoft login
+### Three-Tier Authentication Priority
+
+The extension uses a **three-tier fallback approach** to restore or establish authentication:
+
+1. **Token Storage** (First Priority)
+   - Check `chrome.storage.session` for ephemeral token
+   - Fallback to `chrome.storage.local` (encrypted with AES-GCM)
+   - Validate stored token against `/api/v1/auths/`
+   - If valid, restore authentication state
+
+2. **Browser Session Detection** (Second Priority)
+   - If no stored token, check for existing browser session
+   - Call `/api/v1/auths/` **without** Authorization header
+   - Browser automatically sends HTTP-only cookie if session exists
+   - Extract token from API response: `{token, email, name, ...}`
+   - Store token for future use
+   - **This eliminates redundant OAuth popups when user is already logged in**
+
+3. **OAuth Flow** (Last Resort)
+   - If no storage token and no browser session exists
+   - Open OAuth popup window at `/oauth/microsoft/login`
+   - Redirect to Microsoft EntraID login
    - User authenticates with Microsoft
    - Callback returns to `/oauth/microsoft/callback`
-   - Token is set in cookie
-   - Extension extracts and stores token
+   - Server sets HTTP-only cookie with token
+   - Extension extracts token and stores it
 
-2. **Token Validation**
-   - Token validated against `/api/v1/auths/`
-   - User information retrieved
-   - Authentication state updated
+### Why Session Detection?
 
-3. **Token Storage**
-   - Primary: `chrome.storage.session` (ephemeral, secure)
-   - Fallback: `chrome.storage.local` (encrypted with AES-GCM)
-   - Automatic expiration checking
+OpenWebUI uses **HTTP-only cookies** for session management. The extension **cannot read these cookies directly** via `chrome.cookies.getAll()` due to browser security restrictions. Instead, we detect existing sessions by:
 
-4. **Session Restoration**
-   - On extension startup, check for stored token
-   - Validate token if present
-   - Restore authentication state
+1. Calling the OpenWebUI API endpoint `/api/v1/auths/`
+2. Sending the request **without** an Authorization header
+3. Browser automatically includes the HTTP-only cookie
+4. API returns user data **including the token** if session is valid
+5. Extension stores the token for subsequent API calls
+
+This approach:
+- ✅ Respects HTTP-only cookie security
+- ✅ Avoids unnecessary OAuth popups
+- ✅ Provides seamless UX when browser session exists
+- ✅ Maintains backward compatibility with existing flows
+
+### Session Restoration Details
+
+**On Extension Startup** (`initialize()`):
+1. Check token storage → Validate → Authenticated
+2. Check browser session → Extract token → Authenticated
+3. No valid session → Unauthenticated (wait for user login)
+
+**On User Login** (`login()`):
+1. Already authenticated → Early return
+2. Check browser session → Extract token → Authenticated
+3. No session → Open OAuth popup → Complete flow
+
+**Token Validation**:
+- All tokens validated against `/api/v1/auths/`
+- Response includes: `{id, email, name, token, token_type}`
+- Invalid tokens trigger re-authentication
+
+**Token Storage**:
+- Primary: `chrome.storage.session` (ephemeral, secure)
+- Fallback: `chrome.storage.local` (encrypted with AES-GCM)
+- Automatic expiration checking (if `expires_at` provided)
 
 ## Error Handling
 

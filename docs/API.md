@@ -53,7 +53,10 @@ if (config) {
 
 ### Authentication Check
 
-Check if a user is currently authenticated and retrieve user information.
+Check if a user is currently authenticated and retrieve user information. This endpoint can be used in two ways:
+
+#### 1. Token Validation (with Authorization header)
+Validate an existing token and get user information:
 
 ```typescript
 import { createApiClient } from '@/api';
@@ -67,12 +70,33 @@ try {
 }
 ```
 
-**Endpoint**: `GET /api/v1/auths/`
-
 **Headers Required**:
 ```
 Authorization: Bearer <token>
 ```
+
+#### 2. Session Detection (without Authorization header)
+Check for existing browser session and extract token. The browser automatically sends HTTP-only cookies:
+
+```typescript
+const response = await fetch(`${baseUrl}/api/v1/auths/`, {
+  method: 'GET',
+  credentials: 'include', // Includes HTTP-only cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+if (response.ok) {
+  const data = await response.json();
+  const token = data.token; // Extract token from response
+  console.log('Session exists, token:', token);
+}
+```
+
+**Use Case**: Extensions cannot read HTTP-only cookies directly via `chrome.cookies.getAll()`. This endpoint allows the extension to detect existing browser sessions by calling the API without authentication headers. If a valid session cookie exists, the server returns the token in the response body.
+
+**Endpoint**: `GET /api/v1/auths/`
 
 **Success Response** (200 OK):
 ```json
@@ -83,7 +107,12 @@ Authorization: Bearer <token>
   "role": "admin",
   "profile_image_url": "/user.png",
   "token": "eyJhbGci...",
-  "token_type": "Bearer"
+  "token_type": "Bearer",
+  "expires_at": null,
+  "permissions": {},
+  "bio": null,
+  "gender": null,
+  "date_of_birth": null
 }
 ```
 
@@ -93,8 +122,13 @@ Authorization: Bearer <token>
 - `name`: User's display name
 - `role`: User's role (e.g., "admin", "user")
 - `profile_image_url`: Path to user's profile image or base64-encoded image
-- `token`: JWT token (may be refreshed token)
+- `token`: JWT token (returned even without Authorization header if session exists)
 - `token_type`: Token type, always "Bearer"
+- `expires_at`: Token expiration (null = session-based, backend validates)
+- `permissions`: User permission map (optional)
+- `bio`: User biography (optional)
+- `gender`: User gender (optional)
+- `date_of_birth`: User date of birth (optional)
 
 **Error Response** (401 Unauthorized):
 User is not authenticated or token is invalid/expired.

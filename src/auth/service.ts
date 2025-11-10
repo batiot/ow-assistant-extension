@@ -55,9 +55,15 @@ export class AuthService {
 
   /**
    * Initialize auth service and restore session if available
+   * 
+   * Checks for authentication in the following order:
+   * 1. Extension storage (cached token)
+   * 2. Existing browser session (HTTP-only cookie via /api/v1/auths/)
+   * 3. No authentication (user must login)
    */
   async initialize(): Promise<void> {
-    const token = await TokenStorage.getToken();
+    // First, check extension storage for cached token
+    let token = await TokenStorage.getToken();
     
     if (token && this.isTokenValid(token)) {
       try {
@@ -67,24 +73,47 @@ export class AuthService {
           token,
           user,
         });
+        console.log('[Auth] Initialized from storage for user:', user.email);
+        return;
       } catch (error) {
-        // Token validation failed, clear it
+        // Token validation failed, clear it and continue to session check
+        console.warn('[Auth] Stored token validation failed:', error);
         await TokenStorage.removeToken();
       }
     }
+
+    // Second, check for existing browser session
+    const sessionAuth = await this.checkSessionAuth();
+    if (sessionAuth) {
+      // Store the token for future use
+      await TokenStorage.saveToken(sessionAuth.token);
+      
+      this.updateAuthState({
+        isAuthenticated: true,
+        token: sessionAuth.token,
+        user: sessionAuth.user,
+      });
+      console.log('[Auth] Initialized from browser session for user:', sessionAuth.user.email);
+      return;
+    }
+
+    // No authentication found
+    console.log('[Auth] No authentication found, user must login');
   }
 
   /**
    * Start authentication flow
    * 
-   * Attempts silent authentication first when appropriate (single provider, no form),
-   * falling back to visible popup if silent auth times out or is not applicable.
+   * Authentication priority:
+   * 1. Check if already authenticated (early return)
+   * 2. Check for existing browser session (via /api/v1/auths/)
+   * 3. Attempt silent authentication if appropriate (single provider, no form)
+   * 4. Fall back to visible popup
    * 
    * Silent authentication flow:
-   * 1. Check if already authenticated (early return)
-   * 2. If single provider + no form, attempt silent auth for 2.5s
-   * 3. On silent auth success, store token and return (no popup)
-   * 4. On silent auth timeout/failure, fall through to visible popup
+   * - If single provider + no form, attempt silent auth for 2.5s
+   * - On silent auth success, store token and return (no popup)
+   * - On silent auth timeout/failure, fall through to visible popup
    * 
    * Visible popup flow:
    * - Multiple providers: show base URL for selection
@@ -98,6 +127,26 @@ export class AuthService {
         console.log('[Auth] Already authenticated, skipping login');
         return;
       }
+
+      // Check for existing browser session before opening any auth window
+      console.log('[Auth] Checking for existing browser session...');
+      const sessionAuth = await this.checkSessionAuth();
+      
+      if (sessionAuth) {
+        // Session exists! Store token and update state
+        await TokenStorage.saveToken(sessionAuth.token);
+        
+        this.updateAuthState({
+          isAuthenticated: true,
+          token: sessionAuth.token,
+          user: sessionAuth.user,
+        });
+        
+        console.log('[Auth] Successfully authenticated from existing session');
+        return; // Done, no popup needed
+      }
+      
+      console.log('[Auth] No existing session, proceeding with OAuth flow');
 
       // Determine the authentication URL based on backend config
       const authUrl = this.determineAuthEntryPoint();
@@ -495,6 +544,65 @@ export class AuthService {
       token: tokenCookie.value,
       expiresAt,
     };
+  }
+
+  /**
+   * Check for existing session by calling /api/v1/auths/ without Authorization header
+   * 
+   * This method tests if a valid HTTP-only session cookie exists. Since the cookie
+   * cannot be read directly (HttpOnly), we call the API endpoint and let the browser
+   * automatically send the cookie. If valid, the API returns the token in the response.
+   * 
+   * @returns AuthToken with token value and user info if session exists, null otherwise
+   */
+  private async checkSessionAuth(): Promise<{ token: AuthToken; user: UserInfo } | null> {
+    try {
+      console.log('[Auth] Checking for existing session...');
+      
+      const response = await fetch(`${this.config.baseUrl}/api/v1/auths/`, {
+        method: 'GET',
+        credentials: 'include', // Important: includes HTTP-only cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.log('[Auth] No existing session (401/403)');
+        } else {
+          console.warn('[Auth] Session check failed with status:', response.status);
+        }
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // Validate response has required fields
+      if (!data.token || !data.id || !data.email || !data.name) {
+        console.warn('[Auth] Session response missing required fields');
+        return null;
+      }
+
+      console.log('[Auth] Existing session found for user:', data.email);
+
+      // Create AuthToken - use far future expiry for session-based tokens (expires_at: null)
+      const token: AuthToken = {
+        token: data.token,
+        expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year (backend is source of truth)
+      };
+
+      const user: UserInfo = {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+      };
+
+      return { token, user };
+    } catch (error) {
+      console.warn('[Auth] Session check error:', error);
+      return null;
+    }
   }
 
   /**

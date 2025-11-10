@@ -45,6 +45,16 @@ export interface UserValidationResponse {
   profile_image_url?: string;
   token?: string;
   token_type?: string;
+  expires_at?: string | null;
+  permissions?: {
+    workspace?: Record<string, boolean>;
+    sharing?: Record<string, boolean>;
+    chat?: Record<string, boolean>;
+    features?: Record<string, boolean>;
+  };
+  bio?: string | null;
+  gender?: string | null;
+  date_of_birth?: string | null;
 }
 
 /**

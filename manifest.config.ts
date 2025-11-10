@@ -29,7 +29,7 @@ export default defineManifest({
   },
   content_scripts: [{
     js: ['src/content/main.tsx'],
-    matches: ['https://*/*'],
+    matches: ['http://localhost:8080/'],
   }],
   side_panel: {
     default_path: 'src/sidepanel/index.html',
