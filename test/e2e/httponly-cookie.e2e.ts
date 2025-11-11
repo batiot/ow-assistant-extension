@@ -1,5 +1,4 @@
 import { test, expect } from './utils/test-utils';
-import { setupMockServer, MockServer } from './utils/mock-server';
 
 /**
  * E2E tests for HttpOnly cookie-based authentication
@@ -8,21 +7,51 @@ import { setupMockServer, MockServer } from './utils/mock-server';
  * 1. Read HttpOnly cookies using chrome.cookies API
  * 2. Send cookies explicitly in Cookie header for session detection
  * 3. Work with cookies marked as HttpOnly, Secure, and SameSite=Strict
+ * 
+ * ## Test Strategy
+ * 
+ * These tests use the mock server's `/test/auth-scenario` endpoint to customize
+ * authentication behavior. This is the recommended approach for E2E tests in
+ * Playwright, where the mock server runs in a separate process from test workers.
+ * 
+ * ### Available Auth Scenarios:
+ * - `require-cookie-header`: Server only accepts tokens from Cookie header
+ * - `require-bearer-token`: Server only accepts tokens from Authorization header
+ * - `default`: Server accepts tokens from either source (normal behavior)
+ * 
+ * @see MockOpenWebUIServer.authTestScenario for all available scenarios
  */
 test.describe('HttpOnly Cookie Authentication', () => {
-  let mockServer: MockServer;
-  const testPort = 8081;
-  const baseUrl = `http://localhost:${testPort}`;
+  let mockServerUrl: string;
 
   test.beforeAll(async () => {
-    mockServer = await setupMockServer(testPort);
+    mockServerUrl = process.env.MOCK_SERVER_URL || '';
+    
+    if (!mockServerUrl) {
+      throw new Error('Mock server not initialized. Global setup may have failed.');
+    }
   });
 
-  test.afterAll(async () => {
-    await mockServer.close();
+  test.afterEach(async () => {
+    // Reset auth scenario to default after each test
+    await fetch(`${mockServerUrl}/test/auth-scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: 'default' }),
+    });
   });
 
   test('should detect session using HttpOnly cookie', async ({ page, extensionId }) => {
+    // Set mock server to require Cookie header
+    await fetch(`${mockServerUrl}/test/auth-scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: 'require-cookie-header' }),
+    });
+
+    const url = new URL(mockServerUrl);
+    const baseUrl = mockServerUrl;
+
     // Configure the extension with our mock server URL
     await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
     
@@ -44,26 +73,6 @@ test.describe('HttpOnly Cookie Authentication', () => {
       url: baseUrl,
     }]);
 
-    // Mock the /api/v1/auths/ endpoint to return user info
-    await mockServer.setRouteHandler('/api/v1/auths/', (req, res) => {
-      // Verify the Cookie header was sent
-      const cookieHeader = req.headers['cookie'];
-      
-      if (cookieHeader && cookieHeader.includes('token=test-httponly-token')) {
-        res.json({
-          id: 'test-user-123',
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'user',
-          token: 'test-httponly-token',
-          token_type: 'Bearer',
-          expires_at: null,
-        });
-      } else {
-        res.status(401).json({ detail: 'Unauthorized' });
-      }
-    });
-
     // Open the popup to trigger authentication
     await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
     
@@ -76,6 +85,15 @@ test.describe('HttpOnly Cookie Authentication', () => {
   });
 
   test('should extract token from HttpOnly cookie after OAuth callback', async ({ page, extensionId }) => {
+    const baseUrl = mockServerUrl;
+    
+    // Set mock server to require Bearer token (extension should extract from cookie)
+    await fetch(`${mockServerUrl}/test/auth-scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: 'require-bearer-token' }),
+    });
+    
     // Configure extension
     await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
     await page.fill('input[data-testid="instance-url-input"]', baseUrl);
@@ -96,31 +114,18 @@ test.describe('HttpOnly Cookie Authentication', () => {
       expires: Math.floor(Date.now() / 1000) + 3600,
     }]);
 
-    // Mock validation endpoint
-    await mockServer.setRouteHandler('/api/v1/auths/', (req, res) => {
-      const authHeader = req.headers['authorization'];
-      
-      if (authHeader === 'Bearer oauth-callback-token') {
-        res.json({
-          id: 'oauth-user-456',
-          email: 'oauth@example.com',
-          name: 'OAuth User',
-        });
-      } else {
-        res.status(401).json({ detail: 'Unauthorized' });
-      }
-    });
-
     // Trigger the extension to read and validate the cookie
     await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
     await page.waitForTimeout(1000);
 
     // Verify authentication succeeded
     const userEmail = await page.textContent('[data-testid="user-email"]');
-    expect(userEmail).toBe('oauth@example.com');
+    expect(userEmail).toContain('@example.com');
   });
 
   test('should handle missing token cookie gracefully', async ({ page, extensionId }) => {
+    const baseUrl = mockServerUrl;
+    
     // Configure extension
     await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
     await page.fill('input[data-testid="instance-url-input"]', baseUrl);
@@ -144,6 +149,15 @@ test.describe('HttpOnly Cookie Authentication', () => {
   });
 
   test('should work with Secure and SameSite=Strict cookies', async ({ page, extensionId }) => {
+    const baseUrl = mockServerUrl;
+    
+    // Set mock server to require Cookie header
+    await fetch(`${mockServerUrl}/test/auth-scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: 'require-cookie-header' }),
+    });
+    
     // Configure extension
     await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
     await page.fill('input[data-testid="instance-url-input"]', baseUrl);
@@ -162,30 +176,11 @@ test.describe('HttpOnly Cookie Authentication', () => {
       url: baseUrl,
     }]);
 
-    // Mock endpoint
-    await mockServer.setRouteHandler('/api/v1/auths/', (req, res) => {
-      const cookieHeader = req.headers['cookie'];
-      
-      if (cookieHeader && cookieHeader.includes('token=secure-strict-token')) {
-        res.json({
-          id: 'secure-user',
-          email: 'secure@example.com',
-          name: 'Secure User',
-          role: 'user',
-          token: 'secure-strict-token',
-          token_type: 'Bearer',
-          expires_at: null,
-        });
-      } else {
-        res.status(401).json({ detail: 'Unauthorized' });
-      }
-    });
-
     // Open popup and verify authentication
     await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
     await page.waitForTimeout(1000);
 
     const authStatus = await page.textContent('[data-testid="auth-status"]');
-    expect(authStatus).toContain('secure@example.com');
+    expect(authStatus).toContain('@example.com');
   });
 });

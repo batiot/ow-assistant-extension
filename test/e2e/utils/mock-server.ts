@@ -3,6 +3,61 @@
  * 
  * Simulates OpenWebUI authentication endpoints for testing without a real backend.
  * Supports OAuth flow with Set-Cookie headers and token validation.
+ * 
+ * ## Test Customization via HTTP Endpoints
+ * 
+ * The mock server provides HTTP endpoints for test customization, following
+ * Playwright's distributed architecture where test workers run in separate
+ * processes from the global mock server.
+ * 
+ * ### Available Test Endpoints:
+ * 
+ * 1. **Error Mode Control**: `POST /test/error-mode`
+ *    - Set error scenarios: 'none', 'network', 'invalid_token', 'server_error'
+ *    - Example: `{ "mode": "network" }`
+ * 
+ * 2. **OAuth Delay Control**: `POST /test/oauth-delay`
+ *    - Set OAuth redirect delay in milliseconds for testing timeouts
+ *    - Example: `{ "delay": 3000 }` for timeout tests, `{ "delay": 100 }` for fast/silent auth
+ * 
+ * 3. **Auth Scenario Control**: `POST /test/auth-scenario`
+ *    - Customize authentication endpoint behavior
+ *    - Scenarios:
+ *      - 'default': Accept token from Bearer header or Cookie (normal behavior)
+ *      - 'require-cookie-header': Only validate token from Cookie header (HttpOnly cookie tests)
+ *      - 'require-bearer-token': Only validate token from Authorization Bearer header
+ *      - 'missing-token': Always return 401 (simulate unauthenticated state)
+ *      - 'custom-user': Return different user data (admin role with full permissions)
+ *    - Example: `{ "scenario": "require-cookie-header" }`
+ * 
+ * ### Usage in E2E Tests:
+ * 
+ * ```typescript
+ * // Set auth scenario via HTTP
+ * await fetch(`${mockServerUrl}/test/auth-scenario`, {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({ scenario: 'require-cookie-header' }),
+ * });
+ * 
+ * // Reset to default after test
+ * await fetch(`${mockServerUrl}/test/auth-scenario`, {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({ scenario: 'default' }),
+ * });
+ * ```
+ * 
+ * ### Why HTTP Endpoints vs Direct Method Calls:
+ * 
+ * Playwright's global setup runs in a separate process from test workers.
+ * The mock server instance created in global-setup.ts is not directly
+ * accessible from test files due to process isolation. HTTP endpoints
+ * allow tests to configure the mock server across process boundaries.
+ * 
+ * Methods like `setRouteHandler()` are available for unit/integration tests
+ * that create their own mock server instance, but E2E tests should use
+ * HTTP endpoints for configuration.
  */
 
 import express, { Express, Request, Response } from 'express';
@@ -10,6 +65,26 @@ import cookieParser from 'cookie-parser';
 import { Server } from 'http';
 
 export type ErrorMode = 'none' | 'network' | 'invalid_token' | 'server_error';
+
+/**
+ * Predefined test scenarios for /api/v1/auths/ endpoint
+ * 
+ * These scenarios allow E2E tests to customize authentication behavior
+ * via the /test/auth-scenario HTTP endpoint.
+ * 
+ * @example
+ * // Test HttpOnly cookie handling
+ * POST /test/auth-scenario
+ * { "scenario": "require-cookie-header" }
+ * 
+ * // Then the /api/v1/auths/ endpoint will only accept tokens from Cookie header
+ */
+export type AuthTestScenario = 
+  | 'default'                    // Default behavior: accept token from Bearer header or Cookie
+  | 'require-cookie-header'      // Only accept token from Cookie header (for HttpOnly cookie tests)
+  | 'require-bearer-token'       // Only accept token from Authorization Bearer header
+  | 'missing-token'              // Return 401 as if no token present
+  | 'custom-user';               // Return a different test user (admin with full permissions)
 
 interface RequestLog {
   timestamp: number;
@@ -26,6 +101,8 @@ export class MockOpenWebUIServer {
   private errorMode: ErrorMode = 'none';
   private requestLogs: RequestLog[] = [];
   private oauthDelay: number = 100; // Default fast redirect for silent auth
+  private customRouteHandlers: Map<string, (req: Request, res: Response) => void> = new Map();
+  private authTestScenario: AuthTestScenario = 'default';
 
   constructor() {
     this.app = express();
@@ -79,7 +156,13 @@ export class MockOpenWebUIServer {
 
     // Token validation endpoint
     this.app.get('/api/v1/auths/', (req, res) => {
-      this.handleTokenValidation(req, res);
+      // Check if there's a custom handler for this route
+      const customHandler = this.customRouteHandlers.get('/api/v1/auths/');
+      if (customHandler) {
+        customHandler(req, res);
+      } else {
+        this.handleTokenValidation(req, res);
+      }
     });
 
     // Test endpoint to set error mode
@@ -101,6 +184,29 @@ export class MockOpenWebUIServer {
         res.json({ success: true, delay: this.oauthDelay });
       } else {
         res.status(400).json({ error: 'Invalid delay value' });
+      }
+    });
+
+    // Test endpoint to set auth test scenario
+    this.app.post('/test/auth-scenario', express.json(), (req, res) => {
+      const { scenario } = req.body;
+      const validScenarios: AuthTestScenario[] = [
+        'default',
+        'require-cookie-header',
+        'require-bearer-token',
+        'missing-token',
+        'custom-user'
+      ];
+      
+      if (scenario && validScenarios.includes(scenario)) {
+        this.authTestScenario = scenario as AuthTestScenario;
+        res.json({ success: true, scenario: this.authTestScenario });
+      } else {
+        res.status(400).json({ 
+          error: 'Invalid auth scenario',
+          validScenarios,
+          received: scenario
+        });
       }
     });
   }
@@ -178,6 +284,12 @@ export class MockOpenWebUIServer {
 
   /**
    * Handle token validation - supports Bearer token and cookie
+   * 
+   * Behavior can be customized via auth test scenarios set through
+   * the /test/auth-scenario endpoint. This allows E2E tests to verify
+   * different authentication methods (Bearer token, HttpOnly cookies, etc.)
+   * 
+   * @see AuthTestScenario for available test scenarios
    */
   private handleTokenValidation(req: Request, res: Response): void {
     // Check for network error mode
@@ -192,10 +304,40 @@ export class MockOpenWebUIServer {
       return;
     }
 
+    // Handle test scenarios
+    if (this.authTestScenario === 'missing-token') {
+      res.status(401).json({ detail: 'Not authenticated' });
+      return;
+    }
+
     // Extract token from Bearer header or cookie
     const bearerToken = req.headers.authorization?.replace('Bearer ', '');
+    const cookieHeader = req.headers['cookie'];
     const cookieToken = req.cookies?.token;
-    const token = bearerToken || cookieToken;
+    
+    let token: string | undefined;
+    
+    // Apply scenario-specific token extraction
+    switch (this.authTestScenario) {
+      case 'require-cookie-header':
+        // Only accept token from Cookie header (tests HttpOnly cookie handling)
+        if (cookieHeader && cookieHeader.includes('token=')) {
+          token = cookieToken;
+        }
+        break;
+      
+      case 'require-bearer-token':
+        // Only accept token from Authorization header
+        token = bearerToken;
+        break;
+      
+      case 'default':
+      case 'custom-user':
+      default:
+        // Accept token from either source
+        token = bearerToken || cookieToken;
+        break;
+    }
 
     // Check for invalid token mode or missing token
     if (this.errorMode === 'invalid_token' || !token) {
@@ -209,16 +351,30 @@ export class MockOpenWebUIServer {
       return;
     }
 
-    // Return mock user data matching real OpenWebUI API contract
-    const response = {
+    // Return different user data based on scenario
+    const response = this.authTestScenario === 'custom-user' 
+      ? this.getCustomUserResponse(token)
+      : this.getDefaultUserResponse(token);
+
+    res.json(response);
+  }
+
+  /**
+   * Get default user response
+   * 
+   * Returns a standard test user with basic permissions.
+   * This matches the real OpenWebUI API contract.
+   */
+  private getDefaultUserResponse(token: string) {
+    return {
       id: '16f44d75-3705-4adf-a83e-f5f6fbedf495',
       email: 'user@example.com',
       name: 'Test User',
       role: 'user',
       profile_image_url: '/user.png',
-      token: token,  // Always include token (matches real API behavior)
+      token: token,
       token_type: 'Bearer',
-      expires_at: null,  // Session-based token
+      expires_at: null,
       permissions: {
         workspace: {
           models: false,
@@ -266,8 +422,71 @@ export class MockOpenWebUIServer {
       gender: null,
       date_of_birth: null,
     };
+  }
 
-    res.json(response);
+  /**
+   * Get custom user response for testing
+   * 
+   * Returns a test user with admin role and full permissions.
+   * Used to test permission-based features and admin functionality.
+   */
+  private getCustomUserResponse(token: string) {
+    return {
+      id: 'custom-test-user-123',
+      email: 'custom@example.com',
+      name: 'Custom Test User',
+      role: 'admin',
+      profile_image_url: '/custom-user.png',
+      token: token,
+      token_type: 'Bearer',
+      expires_at: null,
+      permissions: {
+        workspace: {
+          models: true,
+          knowledge: true,
+          prompts: true,
+          tools: true,
+        },
+        sharing: {
+          public_models: true,
+          public_knowledge: true,
+          public_prompts: true,
+          public_tools: true,
+          public_notes: true,
+        },
+        chat: {
+          controls: true,
+          valves: true,
+          system_prompt: true,
+          params: true,
+          file_upload: true,
+          delete: true,
+          delete_message: true,
+          continue_response: true,
+          regenerate_response: true,
+          rate_response: true,
+          edit: true,
+          share: true,
+          export: true,
+          stt: true,
+          tts: true,
+          call: true,
+          multiple_models: true,
+          temporary: true,
+          temporary_enforced: false,
+        },
+        features: {
+          direct_tool_servers: true,
+          web_search: true,
+          image_generation: true,
+          code_interpreter: true,
+          notes: true,
+        },
+      },
+      bio: 'Custom test user for E2E testing',
+      gender: null,
+      date_of_birth: null,
+    };
   }
 
   /**
@@ -379,11 +598,69 @@ export class MockOpenWebUIServer {
   }
 
   /**
+   * Set a custom route handler for a specific path
+   * 
+   * This allows tests to override default behavior for specific endpoints.
+   * 
+   * **Note**: This method is only useful for unit/integration tests that
+   * create their own MockOpenWebUIServer instance. E2E tests using the
+   * global mock server should use HTTP endpoints (like /test/auth-scenario)
+   * instead due to Playwright's process isolation.
+   * 
+   * @param path The route path (e.g., '/api/v1/auths/')
+   * @param handler The custom handler function
+   * 
+   * @example
+   * // In a unit test
+   * const server = new MockOpenWebUIServer();
+   * await server.start();
+   * server.setRouteHandler('/api/v1/auths/', (req, res) => {
+   *   res.json({ custom: 'response' });
+   * });
+   */
+  setRouteHandler(path: string, handler: (req: Request, res: Response) => void): void {
+    this.customRouteHandlers.set(path, handler);
+  }
+
+  /**
+   * Clear a custom route handler for a specific path
+   * @param path The route path to clear
+   */
+  clearRouteHandler(path: string): void {
+    this.customRouteHandlers.delete(path);
+  }
+
+  /**
+   * Clear all custom route handlers
+   */
+  clearAllRouteHandlers(): void {
+    this.customRouteHandlers.clear();
+  }
+
+  /**
    * Reset server to default state (normal mode, clear logs, fast OAuth)
+   * 
+   * Resets all customizable settings:
+   * - Error mode to 'none'
+   * - OAuth delay to 100ms (fast/silent auth)
+   * - Clears request logs
+   * - Clears custom route handlers
+   * - Auth test scenario to 'default'
    */
   reset(): void {
     this.errorMode = 'none';
     this.oauthDelay = 100;
     this.requestLogs = [];
+    this.customRouteHandlers.clear();
+    this.authTestScenario = 'default';
   }
+}
+
+/**
+ * Helper to setup and start the mock server for E2E tests
+ */
+export async function setupMockServer(port?: number): Promise<MockOpenWebUIServer> {
+  const server = new MockOpenWebUIServer();
+  await server.start(port);
+  return server;
 }

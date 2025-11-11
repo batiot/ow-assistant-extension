@@ -10,7 +10,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: 'html',
+  reporter: [
+    ['html'],
+    ['json', { outputFile: 'test-results/test-results.json' }],
+    ['list']
+  ],
   globalSetup: './test/e2e/global-setup.ts',
   globalTeardown: './test/e2e/global-teardown.ts',
   use: {
@@ -34,7 +38,8 @@ export default defineConfig({
     },
   ],
   testMatch: '**/*.e2e.ts',
-  timeout: 30000,
+  timeout: 10000,
+  globalTimeout: 180000, // 3 minutes max for entire test run (for agent use)
   /* Run your local dev server before starting the tests */
   /* We handle building in the test:e2e script */
 });

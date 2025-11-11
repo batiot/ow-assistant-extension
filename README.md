@@ -124,6 +124,22 @@ npm run dev
 npm run build
 ```
 
+## Development Environment
+
+### GitHub Codespaces
+
+When opening this project in GitHub Codespaces, you may notice a Vite server automatically starts with `npx vite --port=4000`. This is triggered by Codespaces' auto-detection of web development projects based on the `package.json` file.
+
+**Since this is a browser extension project (not a web app), the Vite dev server is not needed for normal development.**
+
+To disable the automatic Vite server launch:
+
+1. The `.vscode/settings.json` file includes `"task.autoDetect": "off"` to prevent auto-detection
+2. If you need to run Vite for development, use `npm run dev` manually
+3. You may need to reload the VS Code window after first opening the Codespace for the setting to take effect
+
+**Note:** The extension's development workflow uses `npm run dev` to start the Vite dev server with CRXJS, which then watches for changes and automatically rebuilds the extension. The auto-launched Vite server is redundant and can be safely ignored or disabled.
+
 ## Project Structure
 
 ```

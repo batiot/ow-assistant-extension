@@ -126,11 +126,54 @@ Issue & proposal process
 
 - Unit tests: Vitest or Jest for pure logic.
 - Integration tests: test background scripts and API clients with mocked OpenWebUI responses.
-- End-to-end: Playwright to run the extension in a real browser profile  (edge only) and validate the auth flows, API interactions, and UI.
+- End-to-end: Playwright to run the extension in a real browser profile (edge only) and validate the auth flows, API interactions, and UI.
 
 Test examples & CI
 
 - CI should run lint, unit tests, and at least one lightweight Playwright smoke test on each PR. Heavier E2E suites can run on a scheduled pipeline.
+
+**Running E2E Tests (For AI Agents)**
+
+⚠️ **IMPORTANT**: Always use the agent-friendly test runner script instead of running Playwright directly.
+
+**Why**: Playwright's HTML report server keeps the shell active indefinitely, requiring manual Ctrl+C. The agent script automatically detects when tests complete and exits cleanly.
+
+**Usage**:
+```bash
+# Run all E2E tests (recommended for agents)
+node test/e2e/run-e2e.js
+
+# Run specific test file
+node test/e2e/run-e2e.js httponly-cookie
+
+# Run specific test pattern
+node test/e2e/run-e2e.js auth
+
+# Custom timeout (default: 200 seconds)
+E2E_TIMEOUT=300 node test/e2e/run-e2e.js
+```
+
+**Script Features**:
+- ✅ Automatic timeout (200s default) - prevents infinite hangs
+- ✅ Auto-detects Playwright HTML report server and exits immediately
+- ✅ Generates JSON results at `test-results/test-results.json`
+- ✅ Creates human-readable summary at `test-results/summary.txt`
+- ✅ Displays pass/fail/skip counts with colored output
+- ✅ Lists failed tests with error messages
+- ✅ Proper exit codes (0 = success, 1 = failures)
+
+**Do NOT use**:
+```bash
+npm run test:e2e           # ❌ Will hang waiting for Ctrl+C
+playwright test            # ❌ Will hang waiting for Ctrl+C
+```
+
+**Script Location**: `/workspaces/ow-assistant-extension/test/e2e/run-e2e.js`
+
+**Output Files**:
+- `test-results/test-results.json` - Machine-readable Playwright JSON report
+- `test-results/summary.txt` - Human-readable test summary
+- `playwright-report/` - HTML report (view with `npx playwright show-report`)
 
 ---
 
