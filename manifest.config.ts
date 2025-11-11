@@ -19,10 +19,11 @@ export default defineManifest({
     'contentSettings',
     'storage',
     'cookies',
-    'http://localhost:8080/'
   ],
   host_permissions: [
     'http://localhost:8080/*',
+    'http://localhost/*',  // For E2E tests with dynamic ports
+    'http://127.0.0.1/*',  // Alternative localhost access
   ],
   background: {
     service_worker: 'src/background/index.ts',

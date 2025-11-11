@@ -17,6 +17,7 @@ export function LoginButton() {
       className="auth-button login-button"
       onClick={handleLogin}
       disabled={isLoading}
+      data-testid="login-button"
     >
       {isLoading ? 'Logging in...' : 'Login with Microsoft'}
     </button>

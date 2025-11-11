@@ -15,13 +15,13 @@ export function UserProfile() {
     .slice(0, 2) || '?';
 
   return (
-    <div className="user-profile">
+    <div className="user-profile" data-testid="user-profile">
       <div className="user-avatar">
         {initials}
       </div>
       <div className="user-info">
-        <div className="user-name">{user.name}</div>
-        <div className="user-email">{user.email}</div>
+        <div className="user-name" data-testid="user-name">{user.name}</div>
+        <div className="user-email" data-testid="user-email">{user.email}</div>
       </div>
     </div>
   );
