@@ -21,9 +21,31 @@ const mockCookies = {
   get: vi.fn(),
 };
 
+const mockWindows = {
+  create: vi.fn().mockResolvedValue({ id: 123 }),
+  remove: vi.fn(),
+  onRemoved: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+};
+
+const mockTabs = {
+  onUpdated: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+  onRemoved: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+};
+
 global.chrome = {
   storage: mockStorage,
   cookies: mockCookies,
+  windows: mockWindows,
+  tabs: mockTabs,
 } as any;
 
 // Mock fetch globally
@@ -50,6 +72,20 @@ describe('AuthService - Session Detection', () => {
   beforeEach(() => {
     AuthService.resetInstance();
     vi.clearAllMocks();
+    
+    // Reset chrome mocks
+    mockCookies.get.mockReset();
+    mockWindows.create.mockReset().mockResolvedValue({ id: 123 });
+    mockWindows.remove.mockReset();
+    mockWindows.onRemoved.addListener.mockReset();
+    mockWindows.onRemoved.removeListener.mockReset();
+    mockTabs.onUpdated.addListener.mockReset();
+    mockTabs.onUpdated.removeListener.mockReset();
+    mockTabs.onRemoved.addListener.mockReset();
+    mockTabs.onRemoved.removeListener.mockReset();
+    
+    // Reset fetch mock
+    (global.fetch as any).mockReset();
     
     // Mock TokenStorage methods
     vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
@@ -227,7 +263,7 @@ describe('AuthService - Session Detection', () => {
       });
 
       // Mock token validation failure
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         status: 401,
       });
@@ -293,11 +329,6 @@ describe('AuthService - Session Detection', () => {
         value: 'valid-session-cookie',
       });
 
-      // Mock chrome.windows.create to verify it's not called
-      global.chrome.windows = {
-        create: vi.fn(),
-      } as any;
-
       // Mock successful session response
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -309,32 +340,12 @@ describe('AuthService - Session Detection', () => {
       await service.login();
 
       // Verify popup was NOT created
-      expect(global.chrome.windows.create).not.toHaveBeenCalled();
+      expect(mockWindows.create).not.toHaveBeenCalled();
     });
 
     it('should proceed to OAuth when no session exists', async () => {
       // Mock no cookie
       mockCookies.get.mockResolvedValueOnce(null);
-
-      // Mock chrome APIs needed for OAuth flow
-      global.chrome.windows = {
-        create: vi.fn().mockResolvedValue({ id: 123 }),
-        onRemoved: {
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-        },
-      } as any;
-
-      global.chrome.tabs = {
-        onUpdated: {
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-        },
-        onRemoved: {
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-        },
-      } as any;
 
       const service = AuthService.getInstance(mockConfig);
       
@@ -361,21 +372,19 @@ describe('AuthService - Session Detection', () => {
         value: 'test-cookie-token',
       });
 
-      const fullResponse = {
-        id: 'user-123',
-        email: 'user@test.com',
-        name: 'Full Name',
-        role: 'admin',
-        token: 'jwt-token-value',
-        token_type: 'Bearer',
-        expires_at: null,
-        profile_image_url: '/avatar.png',
-      };
-
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => fullResponse,
+        json: async () => ({
+          id: 'user-123',
+          email: 'user@test.com',
+          name: 'Full Name',
+          role: 'admin',
+          token: 'jwt-token-value',
+          token_type: 'Bearer',
+          expires_at: null,
+          profile_image_url: '/avatar.png',
+        }),
       });
 
       const service = AuthService.getInstance(mockConfig);
@@ -399,8 +408,13 @@ describe('AuthService - Session Detection', () => {
         ok: true,
         status: 200,
         json: async () => ({
-          ...mockSessionResponse,
+          id: 'test-user-id',
+          email: 'test@example.com',
+          name: 'Test User',
+          role: 'user',
           token: '', // Empty token
+          token_type: 'Bearer',
+          expires_at: null,
         }),
       });
 
