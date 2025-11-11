@@ -3,16 +3,16 @@
  * 
  * Tests extension icon badge behavior based on authentication state.
  * 
- * MANUAL TESTING REQUIRED:
- * Playwright cannot directly inspect Chrome extension badge state (text, color, visibility).
- * These tests are skipped in automated runs. See tasks.md section 6 for manual testing checklist.
+ * NOTE: While Playwright cannot directly inspect Chrome extension badge state (text, color, visibility),
+ * these tests verify the underlying state management and message passing that drives badge updates.
+ * Visual badge inspection still requires manual testing - see tasks.md section 6 for manual checklist.
  * 
  * Unit tests in test/unit/background/badge.test.ts provide automated coverage of badge logic.
  */
 
 import { test, expect } from './utils/test-utils';
 
-test.describe.skip('Icon Badge E2E Tests - Manual Testing Required', () => {
+test.describe('Icon Badge E2E Tests', () => {
 
   test('should initialize with unauthenticated state (badge should be set)', async ({ context, extensionId }) => {
     const page = await context.newPage();
