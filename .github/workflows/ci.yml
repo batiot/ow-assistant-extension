@@ -73,6 +73,11 @@ jobs:
         run: npm ci
 
       - name: Build (production)
+        env:
+          # Optional: Set EXT_PUBLIC_KEY secret in repository settings for stable extension ID
+          # This makes the extension ID deterministic across CI builds
+          # If not set, Chrome will generate a random ID (tests handle both cases)
+          EXT_PUBLIC_KEY: ${{ secrets.EXT_PUBLIC_KEY }}
         run: npm run build
 
       - name: List release directory

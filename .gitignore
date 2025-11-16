@@ -32,3 +32,6 @@ playwright-report/
 test-results/
 coverage/
 .vitest/
+# Chrome extension private keys - never commit
+*.pem
+*.crx

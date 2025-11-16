@@ -87,6 +87,38 @@ const waitForExtensionId = async (timeout = 30000) => {
 - No synchronous API to get extension ID
 - Timeout prevents infinite waiting
 
+### Optional: Using a Fixed Extension ID
+
+By default, Chrome generates a random ID for unpacked extensions, which is why tests must dynamically discover it. However, you can optionally stabilize the extension ID for development by providing a public key.
+
+**This is completely optional** - tests are designed to work with dynamic IDs and require no changes.
+
+#### When a Fixed ID Might Be Useful
+
+- **Debugging test failures**: Consistent extension URLs in logs and error messages
+- **External test tooling**: Tools that need to hardcode `chrome-extension://<id>` URLs
+- **Reduced polling overhead**: Slightly faster test setup (marginal benefit)
+
+#### How to Use a Fixed Extension ID
+
+See the main README section "Optional: Stabilize Extension ID for Development" for key generation instructions.
+
+Set the environment variable before running tests:
+
+```bash
+export EXT_PUBLIC_KEY="MIIBIjANBgkqhki...your-base64-public-key..."
+npm run test:e2e
+```
+
+The extension will load with a deterministic ID, but **test code remains unchanged** - the dynamic discovery still works and provides resilience if the key is ever removed.
+
+#### Important Notes
+
+- Tests do not require a fixed key and work perfectly with dynamic IDs
+- The test infrastructure will continue to poll for the ID even with a fixed key (zero-impact compatibility)
+- Remove the key before publishing to Chrome Web Store
+- Never commit the private `.pem` key (see `.gitignore`)
+
 ### Test Fixtures
 
 Custom Playwright fixtures provide `context` and `extensionId` to all tests:

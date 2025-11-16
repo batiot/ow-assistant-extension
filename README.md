@@ -85,6 +85,79 @@ The test mode automatically uses the mock server - no configuration needed:
 npm run test:e2e  # Automatically uses mock server
 ```
 
+### Optional: Stabilize Extension ID for Development
+
+By default, Chrome generates a new extension ID each time you load an unpacked extension. For development or testing scenarios where you need a stable ID (e.g., external integrations, consistent debugging URLs), you can provide a fixed public key.
+
+**Generate a Key Pair:**
+
+1. Build the extension first:
+   ```bash
+   npm run build
+   ```
+
+2. Pack the extension to generate a key pair:
+   ```bash
+   chrome --pack-extension=./dist
+   ```
+   
+   This creates:
+   - `dist.pem` - Private key (**never commit this**)
+   - `dist.crx` - Packed extension
+
+3. Extract the public key from the `.pem` file:
+   ```bash
+   openssl rsa -in dist.pem -pubout -outform DER 2>/dev/null | openssl base64 -A
+   ```
+   
+   Copy the output (a long base64 string starting with `MII...`).
+
+**Use the Public Key:**
+
+Set the `EXT_PUBLIC_KEY` environment variable before building:
+
+```bash
+export EXT_PUBLIC_KEY="MIIBIjANBgkqhki...your-base64-public-key..."
+npm run build
+```
+
+The extension will now have a deterministic ID derived from this public key.
+
+**Security & Publishing Notes:**
+
+- ⚠️ **Never commit** the private `.pem` key to version control (already in `.gitignore`)
+- The public key is safe to share and can be set in CI/CD environments
+- **Remove the key before publishing to Chrome Web Store** - the store assigns its own ID
+- This is optional; E2E tests work with or without a fixed key
+
+**When to Use:**
+- Need consistent extension URLs for debugging
+- External services require hardcoded `chrome-extension://<id>` URLs
+- Shared development environments with fixed configurations
+
+**When Not Needed:**
+- Default development workflow (Chrome's dynamic ID works fine)
+- Publishing to Chrome Web Store (remove the key)
+- Most testing scenarios (tests auto-detect the ID)
+
+**For GitHub Actions / CI:**
+
+To use a stable extension ID in CI builds:
+
+1. Generate a key pair locally (steps above)
+2. Extract the public key:
+   ```bash
+   openssl rsa -in dist.pem -pubout -outform DER 2>/dev/null | openssl base64 -A
+   ```
+3. Add it as a repository secret:
+   - Go to GitHub repository → **Settings** → **Secrets and variables** → **Actions**
+   - Click **New repository secret**
+   - Name: `EXT_PUBLIC_KEY`
+   - Value: Paste the base64 public key
+   - Click **Add secret**
+
+The CI workflow will automatically use this secret when building the extension. If the secret is not set, the build works normally with a dynamic ID.
+
 ## Authentication Flow
 
 The extension uses OAuth 2.0 flow with Microsoft EntraID:
