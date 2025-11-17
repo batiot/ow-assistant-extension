@@ -59,6 +59,24 @@ export class SettingsManager {
       const localResult = await chrome.storage.local.get(STORAGE_KEYS.LOCAL);
       const localSettings: LocalSettings = localResult[STORAGE_KEYS.LOCAL] || {};
 
+      // Detect fresh install: migration complete but no settings in storage
+      // This ensures default instance URL persists across service worker restarts
+      const migrationResult = await chrome.storage.local.get(STORAGE_KEYS.MIGRATION);
+      const isFreshInstall = migrationResult[STORAGE_KEYS.MIGRATION] && 
+                            !syncResult[STORAGE_KEYS.SYNC] && 
+                            !localResult[STORAGE_KEYS.LOCAL];
+
+      if (isFreshInstall) {
+        console.log('[Settings] Fresh install detected, writing default instance URL to storage');
+        // Write default instance URL to storage so it persists across service worker restarts
+        await chrome.storage.local.set({
+          [STORAGE_KEYS.LOCAL]: {
+            instanceUrl: DEFAULT_SETTINGS.instanceUrl,
+          },
+        });
+        localSettings.instanceUrl = DEFAULT_SETTINGS.instanceUrl;
+      }
+
       // Merge with defaults
       this.settings = {
         ...DEFAULT_SETTINGS,
