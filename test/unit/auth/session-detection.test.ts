@@ -120,14 +120,13 @@ describe('AuthService - Session Detection', () => {
         name: 'token',
       });
 
-      // Verify fetch was called with Cookie header (not credentials: 'include')
+      // Verify fetch was called with Authorization Bearer header
       expect(global.fetch).toHaveBeenCalledWith(
         'https://test.openwebui.com/api/v1/auths/',
         expect.objectContaining({
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'Cookie': 'token=cookie-token-value',
+            'Authorization': 'Bearer cookie-token-value',
           },
         })
       );
@@ -299,14 +298,13 @@ describe('AuthService - Session Detection', () => {
       const service = AuthService.getInstance(mockConfig);
       await service.login();
 
-      // Verify fetch was called for session check with Cookie header
+      // Verify fetch was called for session check with Authorization Bearer header
       expect(global.fetch).toHaveBeenCalledWith(
         'https://test.openwebui.com/api/v1/auths/',
         expect.objectContaining({
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'Cookie': 'token=session-cookie-token',
+            'Authorization': 'Bearer session-cookie-token',
           },
         })
       );

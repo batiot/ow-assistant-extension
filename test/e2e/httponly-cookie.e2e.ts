@@ -5,21 +5,16 @@ import { test, expect } from './utils/test-utils';
  * 
  * These tests verify that the extension can:
  * 1. Read HttpOnly cookies using chrome.cookies API
- * 2. Send cookies explicitly in Cookie header for session detection
+ * 2. Use cookie values as Bearer tokens for authentication
  * 3. Work with cookies marked as HttpOnly, Secure, and SameSite=Strict
  * 
  * ## Test Strategy
  * 
- * These tests use the mock server's `/test/auth-scenario` endpoint to customize
- * authentication behavior. This is the recommended approach for E2E tests in
- * Playwright, where the mock server runs in a separate process from test workers.
+ * The real OpenWebUI backend ONLY accepts tokens via Authorization: Bearer header.
+ * The extension reads HttpOnly cookies via chrome.cookies API and sends the value
+ * as a Bearer token. The mock server matches this real backend behavior.
  * 
- * ### Available Auth Scenarios:
- * - `require-cookie-header`: Server only accepts tokens from Cookie header
- * - `require-bearer-token`: Server only accepts tokens from Authorization header
- * - `default`: Server accepts tokens from either source (normal behavior)
- * 
- * @see MockOpenWebUIServer.authTestScenario for all available scenarios
+ * @see MockOpenWebUIServer.authTestScenario for available test scenarios
  */
 test.describe('HttpOnly Cookie Authentication', () => {
   let mockServerUrl: string;
@@ -32,22 +27,7 @@ test.describe('HttpOnly Cookie Authentication', () => {
     }
   });
 
-  test.afterEach(async () => {
-    // Reset auth scenario to default after each test
-    await fetch(`${mockServerUrl}/test/auth-scenario`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario: 'default' }),
-    });
-  });
-
-  test('should detect session using HttpOnly cookie', async ({ context, extensionId }) => {
-    // Set mock server to require Cookie header
-    await fetch(`${mockServerUrl}/test/auth-scenario`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario: 'require-cookie-header' }),
-    });
+  test('should detect session using HttpOnly cookie as Bearer token', async ({ context, extensionId }) => {
 
     // Set an HttpOnly cookie directly (simulating backend login)
     // IMPORTANT: Set cookie BEFORE triggering auth check
@@ -63,7 +43,7 @@ test.describe('HttpOnly Cookie Authentication', () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
     
-    // Trigger login - it should detect the existing cookie session
+    // Trigger login - extension reads cookie and sends as Bearer token
     await page.evaluate(() => {
       return chrome.runtime.sendMessage({ type: 'AUTH_LOGIN' });
     });
@@ -82,15 +62,9 @@ test.describe('HttpOnly Cookie Authentication', () => {
     await page.close();
   });
 
-  test('should extract token from HttpOnly cookie after OAuth callback', async ({ context, extensionId }) => {
-    // Set mock server to require Bearer token (extension should extract from cookie)
-    await fetch(`${mockServerUrl}/test/auth-scenario`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario: 'require-bearer-token' }),
-    });
-
+  test('should extract token from HttpOnly cookie and use as Bearer token', async ({ context, extensionId }) => {
     // Simulate OAuth callback by setting the cookie FIRST
+    // Extension reads via chrome.cookies.get() and sends as Bearer token
     await context.addCookies([{
       name: 'token',
       value: 'oauth-callback-token',
@@ -105,7 +79,7 @@ test.describe('HttpOnly Cookie Authentication', () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
     
-    // Trigger login - it should detect the existing cookie session
+    // Trigger login - extension reads cookie and sends as Bearer token
     await page.evaluate(() => {
       return chrome.runtime.sendMessage({ type: 'AUTH_LOGIN' });
     });
@@ -143,15 +117,9 @@ test.describe('HttpOnly Cookie Authentication', () => {
     await page.close();
   });
 
-  test('should work with Secure and SameSite=Strict cookies', async ({ context, extensionId }) => {
-    // Set mock server to require Cookie header
-    await fetch(`${mockServerUrl}/test/auth-scenario`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario: 'require-cookie-header' }),
-    });
-
-    // Set cookie with all security flags FIRST
+  test('should read HttpOnly cookies via chrome.cookies API despite security flags', async ({ context, extensionId }) => {
+    // Set cookie with all security flags (HttpOnly + SameSite=Strict)
+    // chrome.cookies API can read these despite the security flags
     await context.addCookies([{
       name: 'token',
       value: 'secure-strict-token',
@@ -164,7 +132,7 @@ test.describe('HttpOnly Cookie Authentication', () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
     
-    // Trigger login - it should detect the existing cookie session
+    // Trigger login - chrome.cookies.get() reads cookie despite HttpOnly flag
     await page.evaluate(() => {
       return chrome.runtime.sendMessage({ type: 'AUTH_LOGIN' });
     });

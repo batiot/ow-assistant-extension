@@ -602,13 +602,12 @@ export class AuthService {
         return null;
       }
 
-      // Send the cookie explicitly in the Cookie header
-      // (credentials: 'include' doesn't work in extension context)
+      // Use the cookie value as a Bearer token
+      // The backend only validates tokens from the Authorization header
       const response = await fetch(`${this.config.baseUrl}/api/v1/auths/`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Cookie': `token=${tokenValue}`,
+          'Authorization': `Bearer ${tokenValue}`,
         },
       });
 

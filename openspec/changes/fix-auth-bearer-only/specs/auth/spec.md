@@ -1,86 +1,9 @@
-# auth Specification
+# auth Spec Delta
 
-## Purpose
-TBD - created by archiving change 2025-11-03-implement-authentication. Update Purpose after archive.
-## Requirements
-### Requirement: Secure Token Storage
-The system SHALL store authentication tokens securely using the most appropriate storage mechanism available.
-
-#### Scenario: Store Token with chrome.storage.session
-WHEN a new authentication token is received
-THEN the token SHALL be stored in chrome.storage.session
-AND the token SHALL be encrypted if chrome.storage.local is used as fallback
-AND the token expiration time SHALL be stored
-
-#### Scenario: Token Cleanup
-WHEN the token expires or the user logs out
-THEN the token SHALL be immediately removed from storage
-AND any cached authentication state SHALL be cleared
-
-### Requirement: Seamless Authentication Process
-The system SHALL provide a smooth authentication experience using OpenWebUI's SSO implementation, checking for existing browser sessions before initiating new OAuth flows.
-
-#### Scenario: Initial Authentication Flow
-WHEN an unauthenticated user triggers an action requiring authentication
-THEN the system SHALL first test for existing browser session via `/api/v1/auths/` without Authorization header
-AND only if no valid session exists (non-200 response), SHALL open the OpenWebUI login page
-AND handle the OAuth redirect properly
-AND securely store the received token
-
-#### Scenario: Silent Authentication Success with Existing Session
-WHEN silent authentication is attempted
-AND the user has an existing browser session with valid HTTP-only cookie
-THEN calling `/api/v1/auths/` SHALL return 200 OK with token in response
-AND the silent authentication SHALL complete successfully without timeout
-AND no visible popup window SHALL be displayed
-AND the authentication state SHALL update immediately with token from API response
-AND the user SHALL be able to use the extension without additional login steps
-
-### Requirement: Robust Error Management
-The system SHALL handle authentication errors gracefully and provide clear feedback to users.
-
-#### Scenario: Authentication Failure Handling
-WHEN the authentication process fails
-THEN the system SHALL:
-- Display clear error feedback to the user
-- Provide retry options when appropriate
-- Maintain the application in a usable state
-
-#### Scenario: Token Renewal Process
-WHEN a token expires
-THEN the system SHALL attempt automatic renewal
-AND maintain session continuity if successful
-AND prompt for re-authentication only if necessary
-
-### Requirement: Storage-Driven Initialization
-The background service worker SHALL reactively initialize authentication services in response to configuration changes.
-
-#### Scenario: Listen for Local Storage Changes
-WHEN the extension is running
-THEN the background worker SHALL have a `chrome.storage.onChanged` listener registered
-AND the listener SHALL filter for changes to the `local` storage area
-AND the listener SHALL specifically monitor the `user_settings_local` key
-
-#### Scenario: Reinitialize on URL Configuration
-WHEN the storage listener detects a new or changed instance URL
-AND the URL is valid (not empty or undefined)
-THEN the background worker SHALL:
-1. Log the URL change for debugging
-2. Call `AuthService.resetInstance()` to clear the singleton
-3. Create a new instance with `AuthService.getInstance({ baseUrl: newUrl })`
-4. Call `initialize()` on the new instance
-5. Re-establish the `onAuthStateChanged` listener
-6. Log successful reinitialization
-
-#### Scenario: Handle Reinitialization Errors
-WHEN reinitialization fails due to an error
-THEN the background worker SHALL catch the error
-AND log the error with context information
-AND allow the extension to continue running
-AND the auth service SHALL remain unavailable until the issue is resolved
+## MODIFIED Requirements
 
 ### Requirement: Session-Based Authentication Detection
-The system SHALL check for existing browser sessions by reading the token cookie using chrome.cookies API and sending its value as a Bearer token in the Authorization header, because the OpenWebUI backend only validates tokens from the Authorization header.
+The system SHALL check for existing browser sessions by reading the token cookie using chrome.cookies API and sending it as a Bearer token in the Authorization header, because the OpenWebUI `/api/v1/auths/` endpoint only validates tokens from the Authorization header.
 
 #### Scenario: Check Session on Initialization
 WHEN the AuthService initializes
@@ -163,5 +86,11 @@ AND the response body SHALL contain `{ "detail": "Unauthorized" }` or similar er
 AND the system SHALL treat this as no existing session
 AND proceed with OAuth authentication flow
 
----
+## REMOVED Requirements
 
+### ~~Requirement: Cookie Header Authentication~~
+**REMOVED**: The previous requirement specified sending tokens in the Cookie header, but the actual OpenWebUI backend only accepts Authorization Bearer header. Cookie header approach was based on incorrect assumptions about backend behavior.
+
+**Previous Scenarios Removed**:
+- "Send the cookie explicitly in the Cookie header" - backend ignores Cookie header
+- "Cookie header format `Cookie: token=${value}`" - not used by backend API

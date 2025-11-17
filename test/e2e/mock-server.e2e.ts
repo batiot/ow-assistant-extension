@@ -72,27 +72,6 @@ test.describe('Mock Server Tests', () => {
     expect(data).toHaveProperty('email', 'user@example.com');
   });
 
-  test('should validate token with cookie', async () => {
-    const mockServerUrl = process.env.MOCK_SERVER_URL;
-    
-    // First get a token
-    const callbackResponse = await fetch(`${mockServerUrl}/oauth/microsoft/callback?code=test123`);
-    const setCookie = callbackResponse.headers.get('set-cookie');
-    expect(setCookie).toBeTruthy();
-    
-    // Validate token using cookie
-    const response = await fetch(`${mockServerUrl}/api/v1/auths/`, {
-      headers: {
-        'Cookie': setCookie!,
-      },
-    });
-    
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data).toHaveProperty('token');
-    expect(data.token).toContain('eyJ');
-  });
-
   test('should handle error modes', async () => {
     const mockServerUrl = process.env.MOCK_SERVER_URL;
     

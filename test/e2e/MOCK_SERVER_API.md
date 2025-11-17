@@ -74,22 +74,24 @@ await fetch(`${mockServerUrl}/test/oauth-delay`, {
 
 **Endpoint:** `POST /test/auth-scenario`
 
-Customize authentication endpoint (`/api/v1/auths/`) behavior for testing different authentication methods.
+Customize authentication endpoint (`/api/v1/auths/`) behavior for testing different scenarios.
+
+**Note:** The mock server matches real OpenWebUI backend behavior, which only accepts tokens via `Authorization: Bearer` header.
 
 **Request:**
 ```json
 {
-  "scenario": "default" | "require-cookie-header" | "require-bearer-token" | "missing-token" | "custom-user"
+  "scenario": "require-bearer-token" | "missing-token" | "custom-user"
 }
 ```
 
 **Example:**
 ```typescript
-// Test HttpOnly cookie handling
+// Test Bearer token authentication (default, matches real backend)
 await fetch(`${mockServerUrl}/test/auth-scenario`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ scenario: 'require-cookie-header' }),
+  body: JSON.stringify({ scenario: 'require-bearer-token' }),
 });
 ```
 
@@ -97,9 +99,7 @@ await fetch(`${mockServerUrl}/test/auth-scenario`, {
 
 | Scenario | Description | Use Case |
 |----------|-------------|----------|
-| `default` | Accept token from Bearer header or Cookie | Normal operation |
-| `require-cookie-header` | Only accept token from Cookie header | HttpOnly cookie tests |
-| `require-bearer-token` | Only accept token from Authorization header | Bearer token tests |
+| `require-bearer-token` | Only accept token from Authorization header | Default behavior (matches real backend) |
 | `missing-token` | Always return 401 | Unauthenticated state tests |
 | `custom-user` | Return admin user with full permissions | Permission-based feature tests |
 
@@ -120,16 +120,18 @@ test.beforeAll(async () => {
 ### Configure for Test
 ```typescript
 test('my test', async ({ page, extensionId }) => {
-  // Set desired scenario
+  // Optional: Set specific scenario for error testing
   await fetch(`${mockServerUrl}/test/auth-scenario`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scenario: 'require-cookie-header' }),
+    body: JSON.stringify({ scenario: 'missing-token' }),
   });
   
   // Run your test...
 });
 ```
+
+**Note:** The default scenario is `require-bearer-token`, which matches real OpenWebUI backend behavior. You typically don't need to set it explicitly.
 
 ### Cleanup
 ```typescript

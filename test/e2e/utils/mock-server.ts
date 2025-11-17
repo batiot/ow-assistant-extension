@@ -72,17 +72,15 @@ export type ErrorMode = 'none' | 'network' | 'invalid_token' | 'server_error';
  * These scenarios allow E2E tests to customize authentication behavior
  * via the /test/auth-scenario HTTP endpoint.
  * 
- * @example
- * // Test HttpOnly cookie handling
- * POST /test/auth-scenario
- * { "scenario": "require-cookie-header" }
+ * Note: The mock server now matches real OpenWebUI backend behavior,
+ * which only accepts tokens via Authorization: Bearer header.
  * 
- * // Then the /api/v1/auths/ endpoint will only accept tokens from Cookie header
+ * @example
+ * POST /test/auth-scenario
+ * { "scenario": "require-bearer-token" }
  */
 export type AuthTestScenario = 
-  | 'default'                    // Default behavior: accept token from Bearer header or Cookie
-  | 'require-cookie-header'      // Only accept token from Cookie header (for HttpOnly cookie tests)
-  | 'require-bearer-token'       // Only accept token from Authorization Bearer header
+  | 'require-bearer-token'       // Only accept token from Authorization Bearer header (default, matches real backend)
   | 'missing-token'              // Return 401 as if no token present
   | 'custom-user';               // Return a different test user (admin with full permissions)
 
@@ -102,7 +100,7 @@ export class MockOpenWebUIServer {
   private requestLogs: RequestLog[] = [];
   private oauthDelay: number = 100; // Default fast redirect for silent auth
   private customRouteHandlers: Map<string, (req: Request, res: Response) => void> = new Map();
-  private authTestScenario: AuthTestScenario = 'default';
+  private authTestScenario: AuthTestScenario = 'require-bearer-token';
 
   constructor() {
     this.app = express();
@@ -191,8 +189,6 @@ export class MockOpenWebUIServer {
     this.app.post('/test/auth-scenario', express.json(), (req, res) => {
       const { scenario } = req.body;
       const validScenarios: AuthTestScenario[] = [
-        'default',
-        'require-cookie-header',
         'require-bearer-token',
         'missing-token',
         'custom-user'
@@ -283,11 +279,12 @@ export class MockOpenWebUIServer {
   }
 
   /**
-   * Handle token validation - supports Bearer token and cookie
+   * Handle token validation - Bearer token only (matches real OpenWebUI backend)
    * 
-   * Behavior can be customized via auth test scenarios set through
-   * the /test/auth-scenario endpoint. This allows E2E tests to verify
-   * different authentication methods (Bearer token, HttpOnly cookies, etc.)
+   * The real OpenWebUI backend only validates tokens from the Authorization: Bearer header.
+   * Cookie headers are completely ignored. This mock server now matches that behavior.
+   * 
+   * Behavior can be customized via auth test scenarios for error testing.
    * 
    * @see AuthTestScenario for available test scenarios
    */
@@ -310,34 +307,8 @@ export class MockOpenWebUIServer {
       return;
     }
 
-    // Extract token from Bearer header or cookie
-    const bearerToken = req.headers.authorization?.replace('Bearer ', '');
-    const cookieHeader = req.headers['cookie'];
-    const cookieToken = req.cookies?.token;
-    
-    let token: string | undefined;
-    
-    // Apply scenario-specific token extraction
-    switch (this.authTestScenario) {
-      case 'require-cookie-header':
-        // Only accept token from Cookie header (tests HttpOnly cookie handling)
-        if (cookieHeader && cookieHeader.includes('token=')) {
-          token = cookieToken;
-        }
-        break;
-      
-      case 'require-bearer-token':
-        // Only accept token from Authorization header
-        token = bearerToken;
-        break;
-      
-      case 'default':
-      case 'custom-user':
-      default:
-        // Accept token from either source
-        token = bearerToken || cookieToken;
-        break;
-    }
+    // Extract token from Bearer header ONLY (matching real backend)
+    const token = req.headers.authorization?.replace('Bearer ', '');
 
     // Check for invalid token mode or missing token
     if (this.errorMode === 'invalid_token' || !token) {
