@@ -89,6 +89,14 @@ unsubscribe();
 await authService.logout();
 ```
 
+The logout process:
+1. Calls the server-side `/api/v1/auths/signout` endpoint to invalidate the session
+2. Clears the token from chrome.storage
+3. Updates auth state to unauthenticated
+4. Notifies all listeners of the state change
+
+**Graceful Degradation**: If the server signout call fails (network error, timeout, etc.), the logout still completes locally. This ensures users can always log out even when offline.
+
 ## Authentication Flow
 
 ### Three-Tier Authentication Priority

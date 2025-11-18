@@ -255,6 +255,81 @@ describe('AuthService - Authentication Flows', () => {
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
     });
+
+    it('should call server logout endpoint with Bearer token', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      });
+      global.fetch = mockFetch;
+
+      vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(mockToken);
+      vi.spyOn(TokenStorage, 'removeToken').mockResolvedValue(undefined);
+
+      const service = AuthService.getInstance(mockConfig);
+      await service.initialize();
+      await service.logout();
+
+      // Verify the signout call (should be the last call after initialize's validation call)
+      expect(mockFetch).toHaveBeenCalled();
+      const allCalls = mockFetch.mock.calls;
+      const signoutCall = allCalls.find(call => call[0].includes('/signout'));
+      expect(signoutCall).toBeDefined();
+      expect(signoutCall![0]).toContain('/api/v1/auths/signout');
+      expect(signoutCall![1].method).toBe('GET');
+      expect(signoutCall![1].headers['Authorization']).toBe(`Bearer ${mockToken.token}`);
+      expect(signoutCall![1].signal).toBeInstanceOf(AbortSignal);
+      expect(TokenStorage.removeToken).toHaveBeenCalled();
+    });
+
+    it('should complete logout locally even if server logout fails', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+      });
+      global.fetch = mockFetch;
+
+      vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(mockToken);
+      vi.spyOn(TokenStorage, 'removeToken').mockResolvedValue(undefined);
+
+      const service = AuthService.getInstance(mockConfig);
+      await service.initialize();
+      await service.logout();
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(service.isAuthenticated()).toBe(false);
+    });
+
+    it('should complete logout locally on network error', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = mockFetch;
+
+      vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(mockToken);
+      vi.spyOn(TokenStorage, 'removeToken').mockResolvedValue(undefined);
+
+      const service = AuthService.getInstance(mockConfig);
+      await service.initialize();
+      await service.logout();
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(service.isAuthenticated()).toBe(false);
+    });
+
+    it('should skip server call when no token exists', async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      vi.spyOn(TokenStorage, 'removeToken').mockResolvedValue(undefined);
+
+      const service = AuthService.getInstance(mockConfig);
+      await service.logout();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(TokenStorage.removeToken).toHaveBeenCalled();
+    });
   });
 
   describe('Error Types', () => {

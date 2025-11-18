@@ -217,8 +217,40 @@ export class AuthService {
 
   /**
    * Logout and clear session
+   * 
+   * Calls the server-side logout endpoint to invalidate the session,
+   * then clears local storage and auth state. If the server call fails,
+   * local cleanup still proceeds (graceful degradation).
    */
   async logout(): Promise<void> {
+    // Attempt server-side logout if we have a token
+    if (this.authState.token) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(`${this.config.baseUrl}/api/v1/auths/signout`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.authState.token.token}`,
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          console.log('[Auth] Server logout successful');
+        } else {
+          console.warn('[Auth] Server logout failed with status:', response.status);
+        }
+      } catch (error) {
+        // Log error but don't block logout
+        console.warn('[Auth] Server logout error:', error);
+      }
+    }
+
+    // Always clear local state regardless of server response
     await TokenStorage.removeToken();
     this.updateAuthState({
       isAuthenticated: false,

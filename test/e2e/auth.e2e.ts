@@ -248,6 +248,76 @@ test.describe.skip('Authentication E2E Tests', () => {
       const userProfile = page.locator('.user-profile, [data-testid="user-profile"]');
       await expect(userProfile).not.toBeVisible();
     });
+
+    test('SCEN-002-05: Logout calls server signout endpoint', async () => {
+      const page = await context.newPage();
+      const helper = new AuthTestHelper(page, context, extensionId);
+
+      // Track signout endpoint calls
+      const signoutRequests: any[] = [];
+      await page.route('**/api/v1/auths/signout', (route) => {
+        signoutRequests.push({
+          url: route.request().url(),
+          method: route.request().method(),
+          headers: route.request().headers(),
+        });
+        route.continue();
+      });
+
+      await helper.openPopup();
+      await helper.verifyAuthenticatedState();
+
+      // Get the token before logout for verification
+      const token = await helper.getStoredToken();
+      expect(token).toBeTruthy();
+
+      // Trigger logout
+      await helper.clickLogout();
+      await helper.waitForLoadingComplete();
+
+      // Verify server signout endpoint was called
+      expect(signoutRequests.length).toBeGreaterThan(0);
+      const signoutRequest = signoutRequests[0];
+      expect(signoutRequest.method).toBe('GET');
+      expect(signoutRequest.headers['authorization']).toContain('Bearer');
+      
+      // Verify local state was cleared
+      await helper.verifyUnauthenticatedState();
+      const clearedToken = await helper.getStoredToken();
+      expect(clearedToken).toBeNull();
+    });
+
+    test('SCEN-002-06: Logout completes even if server signout fails', async () => {
+      const page = await context.newPage();
+      const helper = new AuthTestHelper(page, context, extensionId);
+
+      await helper.openPopup();
+      await helper.verifyAuthenticatedState();
+
+      // Set server to error mode
+      const mockServerUrl = process.env.MOCK_SERVER_URL;
+      await fetch(`${mockServerUrl}/test/error-mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'server_error' }),
+      });
+
+      // Logout should still complete locally
+      await helper.clickLogout();
+      await helper.waitForLoadingComplete();
+
+      // Reset error mode
+      await fetch(`${mockServerUrl}/test/error-mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'none' }),
+      });
+
+      // Verify local state was cleared despite server error
+      await helper.verifyUnauthenticatedState();
+      const token = await helper.getStoredToken();
+      expect(token).toBeNull();
+    });
   });
 
   // REQ-003: Auth Persistence Tests

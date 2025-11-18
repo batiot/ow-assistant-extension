@@ -163,6 +163,11 @@ export class MockOpenWebUIServer {
       }
     });
 
+    // Signout endpoint
+    this.app.get('/api/v1/auths/signout', (req, res) => {
+      this.handleSignout(req, res);
+    });
+
     // Test endpoint to set error mode
     this.app.post('/test/error-mode', express.json(), (req, res) => {
       const { mode } = req.body;
@@ -461,6 +466,35 @@ export class MockOpenWebUIServer {
   }
 
   /**
+   * Handle signout - invalidates the session
+   * 
+   * Matches the real OpenWebUI backend signout endpoint.
+   * Returns 200 OK on success, regardless of whether a valid token was provided.
+   */
+  private handleSignout(req: Request, res: Response): void {
+    // Check for network error mode
+    if (this.errorMode === 'network') {
+      res.status(503).json({ error: 'Service unavailable' });
+      return;
+    }
+
+    // Check for server error mode
+    if (this.errorMode === 'server_error') {
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    // Extract token from Bearer header (optional - signout succeeds regardless)
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    // Log the signout request for test verification
+    console.log(`[Mock Server] Signout request received${token ? ' with token' : ''}`);
+
+    // Return 200 OK - backend invalidates session on its side
+    res.status(200).json({ success: true });
+  }
+
+  /**
    * Start the mock server on a random available port
    */
   async start(port?: number): Promise<void> {
@@ -623,7 +657,7 @@ export class MockOpenWebUIServer {
     this.oauthDelay = 100;
     this.requestLogs = [];
     this.customRouteHandlers.clear();
-    this.authTestScenario = 'default';
+    this.authTestScenario = 'require-bearer-token';
   }
 }
 

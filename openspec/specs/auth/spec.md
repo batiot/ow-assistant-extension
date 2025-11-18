@@ -53,18 +53,32 @@ AND maintain session continuity if successful
 AND prompt for re-authentication only if necessary
 
 ### Requirement: Storage-Driven Initialization
-The background service worker SHALL reactively initialize authentication services in response to configuration changes.
+The background service worker SHALL reactively initialize authentication services in response to configuration changes **AND SHALL initialize on startup when a valid instance URL is present (from storage or defaults)**.
 
-#### Scenario: Listen for Local Storage Changes
-WHEN the extension is running
-THEN the background worker SHALL have a `chrome.storage.onChanged` listener registered
-AND the listener SHALL filter for changes to the `local` storage area
-AND the listener SHALL specifically monitor the `user_settings_local` key
+#### Scenario: Initialize on Startup with Default URL
+**WHEN** the extension starts for the first time (fresh install)
+**AND** no instance URL exists in storage
+**AND** the settings manager returns the compile-time default URL (e.g., `http://localhost:8080`)
+**AND** the default URL is not empty
+**THEN** the background worker SHALL:
+1. Retrieve the instance URL from `configManager.getOpenWebUIBaseUrl()`
+2. Recognize the default URL as a valid configuration
+3. Initialize the authentication service with `AuthService.getInstance({ baseUrl })`
+4. Call `initialize()` on the auth service instance
+5. Establish the `onAuthStateChanged` listener
+6. Log the initialization with the default URL for debugging
 
-#### Scenario: Reinitialize on URL Configuration
-WHEN the storage listener detects a new or changed instance URL
-AND the URL is valid (not empty or undefined)
-THEN the background worker SHALL:
+#### Scenario: Distinguish Default URL from Explicitly Cleared URL
+**WHEN** determining whether to initialize the auth service
+**THEN** the system SHALL treat an empty string or undefined URL as "not configured"
+**AND** SHALL treat any non-empty URL (including compile-time defaults) as "configured"
+**AND** SHALL NOT initialize auth service when URL is explicitly empty
+**AND** SHALL initialize auth service when URL contains the default value from code
+
+#### Scenario: Reinitialize on URL Configuration (No Change)
+**WHEN** the storage listener detects a new or changed instance URL
+**AND** the URL is valid (not empty or undefined)
+**THEN** the background worker SHALL:
 1. Log the URL change for debugging
 2. Call `AuthService.resetInstance()` to clear the singleton
 3. Create a new instance with `AuthService.getInstance({ baseUrl: newUrl })`
@@ -72,15 +86,10 @@ THEN the background worker SHALL:
 5. Re-establish the `onAuthStateChanged` listener
 6. Log successful reinitialization
 
-#### Scenario: Handle Reinitialization Errors
-WHEN reinitialization fails due to an error
-THEN the background worker SHALL catch the error
-AND log the error with context information
-AND allow the extension to continue running
-AND the auth service SHALL remain unavailable until the issue is resolved
+*Note: This scenario is unchanged from the original spec but included for completeness.*
 
 ### Requirement: Session-Based Authentication Detection
-The system SHALL check for existing browser sessions by reading the token cookie using chrome.cookies API and sending its value as a Bearer token in the Authorization header, because the OpenWebUI backend only validates tokens from the Authorization header.
+The system SHALL check for existing browser sessions by reading the token cookie using chrome.cookies API and sending it as a Bearer token in the Authorization header, because the OpenWebUI `/api/v1/auths/` endpoint only validates tokens from the Authorization header.
 
 #### Scenario: Check Session on Initialization
 WHEN the AuthService initializes
@@ -163,5 +172,71 @@ AND the response body SHALL contain `{ "detail": "Unauthorized" }` or similar er
 AND the system SHALL treat this as no existing session
 AND proceed with OAuth authentication flow
 
----
+### Requirement: Server-Side Logout
+The system SHALL invalidate server-side sessions when the user logs out, ensuring complete session termination on both client and server.
+
+#### Scenario: Call Server Logout Endpoint
+WHEN the user initiates logout from the extension
+THEN the system SHALL send a GET request to `/api/v1/auths/signout`
+AND the request SHALL include the current authentication token in the `Authorization: Bearer` header
+AND the request SHALL be sent before clearing local storage
+AND the endpoint call SHALL complete within a reasonable timeout (5 seconds)
+
+#### Scenario: Server Logout Success
+WHEN the server logout endpoint is called
+AND the server responds with a success status (200-299)
+THEN the system SHALL log the successful server logout
+AND proceed to clear local authentication state
+AND remove the token from chrome.storage
+AND set auth state to `{ isAuthenticated: false, token: null, user: null }`
+AND update UI to show unauthenticated state
+AND the login button SHALL be visible
+AND the logout button SHALL NOT be visible
+AND the user profile SHALL NOT be visible
+
+#### Scenario: Server Logout Failure Handling
+WHEN the server logout endpoint is called
+AND the server responds with an error status (401, 403, 500, etc.)
+OR a network error occurs
+OR the request times out
+THEN the system SHALL log the error for debugging purposes
+AND still proceed to clear local authentication state (graceful degradation)
+AND remove the token from chrome.storage
+AND set auth state to `{ isAuthenticated: false, token: null, user: null }`
+AND update UI to show unauthenticated state
+AND the login button SHALL be visible
+AND the logout button SHALL NOT be visible
+AND the user profile SHALL NOT be visible
+AND NOT display error messages to the user (silent failure)
+
+#### Scenario: Logout Without Valid Token
+WHEN logout is initiated
+AND no valid token exists in auth state or storage
+THEN the system SHALL skip the server logout API call
+AND proceed directly to clearing any remaining local state
+AND set auth state to `{ isAuthenticated: false, token: null, user: null }`
+AND update UI to show unauthenticated state
+AND the login button SHALL be visible
+AND the logout button SHALL NOT be visible
+AND the user profile SHALL NOT be visible
+
+#### Scenario: Server Logout API Contract
+WHEN `/api/v1/auths/signout` endpoint is called
+THEN the request format SHALL be:
+- Method: GET
+- URL: `${baseUrl}/api/v1/auths/signout`
+- Headers: `Authorization: Bearer ${token}`
+AND the expected successful response SHALL be:
+- Status: 200 OK or 204 No Content
+- Body: Optional (implementation may return empty response)
+AND the server SHALL invalidate the session associated with the provided token
+AND subsequent API calls with the same token SHALL return 401 Unauthorized
+
+#### Scenario: Auth Status Verification After Logout
+WHEN logout completes successfully
+THEN the system MAY optionally verify logout by calling `/api/v1/auths/`
+AND if verification is performed, the response SHALL be 401 Unauthorized
+AND verification is for testing/debugging purposes only
+AND SHALL NOT block or affect the logout flow
+AND SHALL NOT be displayed to the user
 
