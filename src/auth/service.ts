@@ -370,6 +370,14 @@ export class AuthService {
 
     // Always clear local state regardless of server response
     await TokenStorage.removeToken();
+
+    // Remove cookie from main browser profile to prevent re-authentication
+    // from browser session (e.g., if user has OpenWebUI open in a tab)
+    await chrome.cookies.remove({
+      url: this.config.baseUrl,
+      name: 'token',
+    });
+
     this.updateAuthState({
       isAuthenticated: false,
       token: null,

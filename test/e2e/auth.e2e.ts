@@ -2,17 +2,13 @@
  * E2E Authentication Tests
  * 
  * Tests authentication flows with mock OpenWebUI server.
- * 
- * NOTE: These tests are currently skipped because the authentication UI
- * has not been implemented yet. Unskip these tests once authentication
- * functionality is added to the extension.
  */
 
 import { test, expect, chromium, BrowserContext } from '@playwright/test';
 import path from 'path';
 import { AuthTestHelper } from './utils/auth-helper';
 
-test.describe.skip('Authentication E2E Tests', () => {
+test.describe('Authentication E2E Tests', () => {
   let context: BrowserContext;
   let extensionId: string;
 
@@ -29,11 +25,11 @@ test.describe.skip('Authentication E2E Tests', () => {
     // Launch browser with extension
     const pathToExtension = path.resolve('dist');
     const chromeDataDir = path.resolve('test/e2e/tmp/auth-chrome-data');
-    
+
     // Use headless=new for better extension support
     const shouldHeadless = Boolean(process.env.CI) || !process.env.DISPLAY;
     const headlessArgs = shouldHeadless ? ['--headless=new'] : [];
-    
+
     context = await chromium.launchPersistentContext(chromeDataDir, {
       headless: shouldHeadless,
       channel: 'chromium',
@@ -204,7 +200,7 @@ test.describe.skip('Authentication E2E Tests', () => {
       const helper = new AuthTestHelper(page, context, extensionId);
 
       await helper.openPopup();
-      
+
       let token = await helper.getStoredToken();
       expect(token).toBeTruthy();
 
@@ -227,7 +223,7 @@ test.describe.skip('Authentication E2E Tests', () => {
       await page.waitForTimeout(200);
       const isDisabled = await logoutButton.isDisabled().catch(() => false);
       const isVisible = await logoutButton.isVisible().catch(() => false);
-      
+
       expect(isDisabled || !isVisible).toBe(true);
     });
 
@@ -280,7 +276,7 @@ test.describe.skip('Authentication E2E Tests', () => {
       const signoutRequest = signoutRequests[0];
       expect(signoutRequest.method).toBe('GET');
       expect(signoutRequest.headers['authorization']).toContain('Bearer');
-      
+
       // Verify local state was cleared
       await helper.verifyUnauthenticatedState();
       const clearedToken = await helper.getStoredToken();
@@ -316,6 +312,34 @@ test.describe.skip('Authentication E2E Tests', () => {
       // Verify local state was cleared despite server error
       await helper.verifyUnauthenticatedState();
       const token = await helper.getStoredToken();
+      expect(token).toBeNull();
+    });
+
+    test('SCEN-002-07: Logout prevents re-authentication from browser session cookie', async () => {
+      const page = await context.newPage();
+      const helper = new AuthTestHelper(page, context, extensionId);
+
+      await helper.openPopup();
+      await helper.verifyAuthenticatedState();
+
+      // Logout
+      await helper.clickLogout();
+      await helper.waitForLoadingComplete();
+      await helper.verifyUnauthenticatedState();
+
+      // Close and reopen popup - should NOT auto-authenticate
+      await page.close();
+
+      const newPage = await context.newPage();
+      const newHelper = new AuthTestHelper(newPage, context, extensionId);
+      await newHelper.openPopup();
+
+      // Wait a moment for any potential auto-authentication
+      await newPage.waitForTimeout(2000);
+
+      // Verify extension stays logged out (no re-authentication from browser session)
+      await newHelper.verifyUnauthenticatedState();
+      const token = await newHelper.getStoredToken();
       expect(token).toBeNull();
     });
   });
@@ -387,7 +411,7 @@ test.describe.skip('Authentication E2E Tests', () => {
       const sidepanelPage = await context.newPage();
       const sidepanelHelper = new AuthTestHelper(sidepanelPage, context, extensionId);
       await sidepanelHelper.openSidepanel();
-      
+
       await sidepanelHelper.clickLogin();
       await sidepanelHelper.waitForCallbackWithCookie();
       await sidepanelHelper.closeExtraWindows();

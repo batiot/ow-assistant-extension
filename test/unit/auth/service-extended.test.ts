@@ -47,6 +47,7 @@ const mockStorage = {
 const mockCookies = {
   getAll: vi.fn().mockResolvedValue([]),
   get: vi.fn(),
+  remove: vi.fn().mockResolvedValue(undefined),
 };
 
 global.chrome = {
@@ -241,6 +242,10 @@ describe('AuthService - Authentication Flows', () => {
 
       expect(service.isAuthenticated()).toBe(false);
       expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(mockCookies.remove).toHaveBeenCalledWith({
+        url: mockConfig.baseUrl,
+        name: 'token',
+      });
     });
 
     it('should handle logout when not authenticated', async () => {
@@ -250,6 +255,10 @@ describe('AuthService - Authentication Flows', () => {
       await service.logout();
 
       expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(mockCookies.remove).toHaveBeenCalledWith({
+        url: mockConfig.baseUrl,
+        name: 'token',
+      });
     });
 
     it('should clear user data from state', async () => {
@@ -309,6 +318,10 @@ describe('AuthService - Authentication Flows', () => {
 
       expect(mockFetch).toHaveBeenCalled();
       expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(mockCookies.remove).toHaveBeenCalledWith({
+        url: mockConfig.baseUrl,
+        name: 'token',
+      });
       expect(service.isAuthenticated()).toBe(false);
     });
 
@@ -325,6 +338,10 @@ describe('AuthService - Authentication Flows', () => {
 
       expect(mockFetch).toHaveBeenCalled();
       expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(mockCookies.remove).toHaveBeenCalledWith({
+        url: mockConfig.baseUrl,
+        name: 'token',
+      });
       expect(service.isAuthenticated()).toBe(false);
     });
 
@@ -339,6 +356,10 @@ describe('AuthService - Authentication Flows', () => {
 
       expect(mockFetch).not.toHaveBeenCalled();
       expect(TokenStorage.removeToken).toHaveBeenCalled();
+      expect(mockCookies.remove).toHaveBeenCalledWith({
+        url: mockConfig.baseUrl,
+        name: 'token',
+      });
     });
   });
 
