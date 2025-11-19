@@ -41,11 +41,16 @@ const mockTabs = {
   },
 };
 
+const mockIdentity = {
+  launchWebAuthFlow: vi.fn().mockImplementation(() => new Promise(() => { })), // Never resolves to simulate waiting
+};
+
 global.chrome = {
   storage: mockStorage,
   cookies: mockCookies,
   windows: mockWindows,
   tabs: mockTabs,
+  identity: mockIdentity,
 } as any;
 
 // Mock fetch globally
@@ -72,7 +77,7 @@ describe('AuthService - Session Detection', () => {
   beforeEach(() => {
     AuthService.resetInstance();
     vi.clearAllMocks();
-    
+
     // Reset chrome mocks
     mockCookies.get.mockReset();
     mockWindows.create.mockReset().mockResolvedValue({ id: 123 });
@@ -83,10 +88,11 @@ describe('AuthService - Session Detection', () => {
     mockTabs.onUpdated.removeListener.mockReset();
     mockTabs.onRemoved.addListener.mockReset();
     mockTabs.onRemoved.removeListener.mockReset();
-    
+    mockIdentity.launchWebAuthFlow.mockReset().mockImplementation(() => new Promise(() => { }));
+
     // Reset fetch mock
     (global.fetch as any).mockReset();
-    
+
     // Mock TokenStorage methods
     vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
     vi.spyOn(TokenStorage, 'saveToken').mockResolvedValue(undefined);
@@ -346,7 +352,7 @@ describe('AuthService - Session Detection', () => {
       mockCookies.get.mockResolvedValueOnce(null);
 
       const service = AuthService.getInstance(mockConfig);
-      
+
       // Start login but don't wait for it to complete (it will timeout)
       service.login().catch(() => {
         // Expected to fail since we're not completing the OAuth flow
@@ -358,8 +364,11 @@ describe('AuthService - Session Detection', () => {
       // Verify no fetch call was made (no cookie to send)
       expect(global.fetch).not.toHaveBeenCalled();
 
-      // Verify popup was created (OAuth flow started)
-      expect(global.chrome.windows.create).toHaveBeenCalled();
+      // Verify OAuth flow started
+      expect(global.chrome.identity.launchWebAuthFlow).toHaveBeenCalledWith({
+        url: 'https://test.openwebui.com/oauth/microsoft/login',
+        interactive: true,
+      });
     });
   });
 

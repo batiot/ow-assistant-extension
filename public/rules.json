@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "priority": 1,
+        "action": {
+            "type": "redirect",
+            "redirect": {
+                "extensionPath": "/src/pages/oauth-callback.html"
+            }
+        },
+        "condition": {
+            "urlFilter": "*/oauth/*/callback*",
+            "resourceTypes": [
+                "main_frame"
+            ]
+        }
+    }
+]

@@ -5,14 +5,14 @@ export default defineManifest({
   manifest_version: 3,
   name: pkg.name,
   version: pkg.version,
-  
+
   // Optional: Stabilize extension ID for development/testing
   // Set EXT_PUBLIC_KEY env var to a base64-encoded public key (from chrome --pack-extension)
   // Chrome derives a deterministic ID from this public key, ensuring the same ID across rebuilds
   // IMPORTANT: Remove this key before publishing to Chrome Web Store (store assigns its own ID)
   // Use case: Stable extension URLs for debugging, external integrations, or consistent test environments
   ...(process.env.EXT_PUBLIC_KEY && { key: process.env.EXT_PUBLIC_KEY }),
-  
+
   icons: {
     48: 'public/logo.png',
   },
@@ -27,7 +27,16 @@ export default defineManifest({
     'contentSettings',
     'storage',
     'cookies',
+    'declarativeNetRequest',
+    'identity',
   ],
+  declarative_net_request: {
+    rule_resources: [{
+      id: 'oauth_redirect_rules',
+      enabled: true,
+      path: 'public/rules.json',
+    }],
+  },
   host_permissions: [
     'http://localhost:8080/*',
     'http://localhost/*',  // For E2E tests with dynamic ports
@@ -48,4 +57,8 @@ export default defineManifest({
     page: 'src/options/index.html',
     open_in_tab: true,
   },
+  web_accessible_resources: [{
+    resources: ['src/pages/oauth-callback.html'],
+    matches: ['<all_urls>'],
+  }],
 })

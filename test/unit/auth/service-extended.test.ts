@@ -20,10 +20,15 @@ const mockTabs = {
 
 const mockWindows = {
   create: vi.fn(),
+  remove: vi.fn(),
   onRemoved: {
     addListener: vi.fn(),
     removeListener: vi.fn(),
   },
+};
+
+const mockIdentity = {
+  launchWebAuthFlow: vi.fn(),
 };
 
 const mockStorage = {
@@ -41,6 +46,7 @@ const mockStorage = {
 
 const mockCookies = {
   getAll: vi.fn().mockResolvedValue([]),
+  get: vi.fn(),
 };
 
 global.chrome = {
@@ -48,6 +54,7 @@ global.chrome = {
   tabs: mockTabs,
   windows: mockWindows,
   cookies: mockCookies,
+  identity: mockIdentity,
 } as any;
 
 global.fetch = vi.fn();
@@ -79,13 +86,16 @@ describe('AuthService - Authentication Flows', () => {
     // Reset storage mocks
     mockStorage.session.get.mockResolvedValue({});
     mockStorage.local.get.mockResolvedValue({});
-    
+
     // Mock fetch to return valid user data by default
     (global.fetch as any).mockResolvedValue({
       ok: true,
       json: async () => mockUser,
       headers: new Map(),
     });
+
+    // Mock cookie get to return nothing by default
+    mockCookies.get.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -96,7 +106,7 @@ describe('AuthService - Authentication Flows', () => {
     it('should validate existing token and update auth state', async () => {
       // Setup: Token exists in storage
       vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(mockToken);
-      
+
       const service = AuthService.getInstance(mockConfig);
       await service.initialize();
 
@@ -133,7 +143,7 @@ describe('AuthService - Authentication Flows', () => {
     it('should remove token if validation fails', async () => {
       vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(mockToken);
       vi.spyOn(TokenStorage, 'removeToken').mockResolvedValue(undefined);
-      
+
       // Mock validation failure
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
@@ -224,7 +234,7 @@ describe('AuthService - Authentication Flows', () => {
 
       const service = AuthService.getInstance(mockConfig);
       await service.initialize();
-      
+
       expect(service.isAuthenticated()).toBe(true);
 
       await service.logout();
@@ -378,7 +388,7 @@ describe('AuthService - Authentication Flows', () => {
     it('should handle network errors during validation', async () => {
       vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(mockToken);
       vi.spyOn(TokenStorage, 'removeToken').mockResolvedValue(undefined);
-      
+
       // Mock network error - retryOperation will retry but eventually fail
       (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
@@ -400,36 +410,77 @@ describe('AuthService - Authentication Flows', () => {
 
       expect(service.isAuthenticated()).toBe(true);
 
-      // Try login again - should be no-op
-      const createWindowSpy = vi.spyOn(mockWindows, 'create');
-      const createTabSpy = vi.spyOn(mockTabs, 'create');
-
       await service.login();
 
-      expect(createWindowSpy).not.toHaveBeenCalled();
-      expect(createTabSpy).not.toHaveBeenCalled();
+      expect(mockIdentity.launchWebAuthFlow).not.toHaveBeenCalled();
     });
 
-    it('should handle login when not authenticated', async () => {
+    it('should handle successful login flow', async () => {
       vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
+      vi.spyOn(TokenStorage, 'saveToken').mockResolvedValue(undefined);
+
+      // Mock launchWebAuthFlow success
+      mockIdentity.launchWebAuthFlow.mockResolvedValue(
+        'chrome-extension://testid/src/pages/oauth-callback.html?code=auth_code&state=test_state'
+      );
+
+      // Mock callback replay fetch
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+      });
+
+      // Mock cookie retrieval after callback replay
+      mockCookies.get.mockResolvedValue({
+        value: mockToken.token,
+        expirationDate: mockToken.expiresAt! / 1000,
+      });
+
+      // Mock validation fetch
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockUser,
+      });
+
+      const service = AuthService.getInstance(mockConfig);
+      await service.login();
+
+      expect(mockIdentity.launchWebAuthFlow).toHaveBeenCalledWith({
+        url: expect.stringContaining('/oauth/microsoft/login'),
+        interactive: true,
+      });
+
+      expect(service.isAuthenticated()).toBe(true);
+      expect(TokenStorage.saveToken).toHaveBeenCalled();
+    });
+
+    it('should handle login failure (no redirect URL)', async () => {
+      vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
+      mockIdentity.launchWebAuthFlow.mockResolvedValue(undefined);
 
       const service = AuthService.getInstance(mockConfig);
 
-      // Mock window creation
-      mockWindows.create.mockResolvedValue({ id: 123 });
+      await expect(service.login()).rejects.toThrow('Authentication flow failed');
+    });
 
-      // We can't fully test login without mocking the entire callback flow
-      // but we can verify it attempts to create a window
-      const loginPromise = service.login();
+    it('should handle login failure (error in redirect URL)', async () => {
+      vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
+      mockIdentity.launchWebAuthFlow.mockResolvedValue(
+        'chrome-extension://testid/callback?error=access_denied&error_description=User+denied'
+      );
 
-      // Give it a tiny bit of time to start
-      await new Promise(resolve => setTimeout(resolve, 10));
+      const service = AuthService.getInstance(mockConfig);
 
-      // Should have attempted to create auth window or tab
-      expect(mockWindows.create.mock.calls.length + mockTabs.create.mock.calls.length).toBeGreaterThan(0);
-      
-      // Cancel the promise to avoid timeout
-      loginPromise.catch(() => {}); // Ignore rejection
+      await expect(service.login()).rejects.toThrow('User denied');
+    });
+
+    it('should handle user cancellation', async () => {
+      vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
+      mockIdentity.launchWebAuthFlow.mockRejectedValue(new Error('User interaction failed'));
+
+      const service = AuthService.getInstance(mockConfig);
+
+      await expect(service.login()).rejects.toThrow('User cancelled authentication');
     });
   });
 
@@ -491,3 +542,4 @@ describe('AuthService - Authentication Flows', () => {
     });
   });
 });
+
