@@ -440,9 +440,9 @@ describe('AuthService - Authentication Flows', () => {
       vi.spyOn(TokenStorage, 'getToken').mockResolvedValue(null);
       vi.spyOn(TokenStorage, 'saveToken').mockResolvedValue(undefined);
 
-      // Mock launchWebAuthFlow success
+      // Mock launchWebAuthFlow success (with provider parameter from declarativeNetRequest rule)
       mockIdentity.launchWebAuthFlow.mockResolvedValue(
-        'chrome-extension://testid/src/pages/oauth-callback.html?code=auth_code&state=test_state'
+        'chrome-extension://testid/src/pages/oauth-callback.html?provider=microsoft&code=auth_code&state=test_state'
       );
 
       // Mock callback replay fetch

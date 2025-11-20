@@ -20,12 +20,68 @@
       border-radius: 0.5rem;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+    .success {
+      color: #059669;
+    }
+    .error {
+      color: #DC2626;
+    }
+    .hint {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Authentication in progress...</h2>
-    <p>You can close this window if it doesn't close automatically.</p>
+    <div id="status">
+      <h2>Authenticating...</h2>
+      <p>Processing authentication response...</p>
+    </div>
   </div>
+  
+  <script>
+    // Parse query parameters
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    const errorDescription = params.get('error_description');
+    const provider = params.get('provider');
+    
+    const statusEl = document.getElementById('status');
+    
+    if (error) {
+      // OAuth error from provider
+      statusEl.innerHTML = `
+        <h2 class="error">Authentication Failed</h2>
+        <p>${errorDescription || error}</p>
+        <p class="hint">You can close this window.</p>
+      `;
+    } else if (!code) {
+      // Missing authorization code
+      statusEl.innerHTML = `
+        <h2 class="error">Authentication Error</h2>
+        <p>No authorization code received.</p>
+        <p class="hint">Please try again.</p>
+      `;
+    } else {
+      // Success - code present
+      statusEl.innerHTML = `
+        <h2 class="success">Authentication Successful</h2>
+        <p>Completing sign-in...</p>
+        <p class="hint">This window will close automatically.</p>
+      `;
+    }
+    
+    // Log for debugging
+    console.log('[OAuth Callback]', {
+      code: code ? 'present' : 'missing',
+      provider,
+      error,
+      hasState: params.has('state'),
+      url: window.location.href
+    });
+  </script>
 </body>
 </html>

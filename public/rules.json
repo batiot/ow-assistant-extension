@@ -1,18 +1,16 @@
 [
-    {
-        "id": 1,
-        "priority": 1,
-        "action": {
-            "type": "redirect",
-            "redirect": {
-                "extensionPath": "/src/pages/oauth-callback.html"
-            }
-        },
-        "condition": {
-            "urlFilter": "*/oauth/*/callback*",
-            "resourceTypes": [
-                "main_frame"
-            ]
-        }
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "chrome-extension://DEV_EXTENSION_ID_PLACEHOLDER/src/pages/oauth-callback.html?provider=\\2\\3"
+      }
+    },
+    "condition": {
+      "regexFilter": "^(https?://[^/]+)/oauth/([^/]+)/callback(.*)$",
+      "resourceTypes": ["main_frame"]
     }
+  }
 ]

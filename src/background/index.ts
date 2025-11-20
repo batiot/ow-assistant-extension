@@ -3,6 +3,46 @@ import type { AuthState } from '@/auth';
 import { getConfigManager } from '@/config';
 import { getBackendConfig } from '@/api/client';
 
+/**
+ * Setup dynamic declarativeNetRequest rule for OAuth callback
+ * 
+ * This rule intercepts OAuth provider callbacks and redirects to our extension page
+ * while preserving the provider name and all query parameters (code, state, etc.)
+ * 
+ * Example transformation:
+ *   From: http://localhost:8080/oauth/microsoft/callback?code=ABC&state=XYZ
+ *   To:   chrome-extension://ID/src/pages/oauth-callback.html?provider=microsoft&code=ABC&state=XYZ
+ */
+async function setupOAuthRedirectRule(): Promise<void> {
+  const extensionId = chrome.runtime.id;
+  
+  const rule: chrome.declarativeNetRequest.Rule = {
+    id: 1,
+    priority: 1,
+    action: {
+      type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+      redirect: {
+        regexSubstitution: `chrome-extension://${extensionId}/src/pages/oauth-callback.html?provider=\\2\\3`
+      }
+    },
+    condition: {
+      regexFilter: '^(https?://[^/]+)/oauth/([^/]+)/callback(.*)$',
+      resourceTypes: [chrome.declarativeNetRequest.ResourceType.MAIN_FRAME]
+    }
+  };
+  
+  try {
+    // Remove any existing rules with this ID, then add the new one
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [1],
+      addRules: [rule]
+    });
+    console.log('[OAuth] Dynamic redirect rule configured for extension:', extensionId);
+  } catch (error) {
+    console.error('[OAuth] Failed to setup redirect rule:', error);
+  }
+}
+
 // Background service worker
 let authService: AuthService | null = null;
 
@@ -24,11 +64,13 @@ function updateIconBadge(authState: AuthState): void {
 
 // Initialize on startup
 chrome.runtime.onStartup.addListener(async () => {
+  await setupOAuthRedirectRule();
   await initializeServices();
 });
 
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Extension installed');
+  await setupOAuthRedirectRule();
   await initializeServices();
 });
 

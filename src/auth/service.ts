@@ -164,9 +164,10 @@ export class AuthService {
         );
       }
 
-      // Parse the redirect URL to extract the code
+      // Parse the redirect URL to extract the code and provider
       const url = new URL(redirectUrl);
       const code = url.searchParams.get('code');
+      const provider = url.searchParams.get('provider');
       const error = url.searchParams.get('error');
       const errorDescription = url.searchParams.get('error_description');
 
@@ -184,11 +185,18 @@ export class AuthService {
         );
       }
 
-      console.log('[Auth] Captured authorization code, exchanging for token...');
+      if (!provider) {
+        throw new AuthError(
+          AuthErrorType.AUTHENTICATION_FAILED,
+          'No provider found in redirect URL (OAuth callback configuration error)'
+        );
+      }
+
+      console.log('[Auth] Captured authorization code from provider:', provider);
 
       // Manually exchange the code for a token by replaying the callback to the backend
       // This allows the backend to process the code and set the session cookie
-      const token = await this.exchangeCodeForToken(code, url.searchParams.get('state'));
+      const token = await this.exchangeCodeForToken(code, provider, url.searchParams.get('state'));
 
       // Validate and store token
       const user = await this.validateToken(token.token);
@@ -221,86 +229,13 @@ export class AuthService {
 
   /**
    * Exchange authorization code for token by replaying the callback
+   * 
+   * @param code - The authorization code from OAuth provider
+   * @param provider - The OAuth provider name (e.g., 'microsoft', 'google')
+   * @param state - The state parameter from OAuth flow
    */
-  private async exchangeCodeForToken(code: string, state: string | null): Promise<AuthToken> {
+  private async exchangeCodeForToken(code: string, provider: string, state: string | null): Promise<AuthToken> {
     try {
-      // Construct the backend callback URL
-      // We need to know which provider was used. For now, we can try to infer it or use a generic approach.
-      // However, the backend callback URL usually includes the provider name: /oauth/{provider}/callback
-      // The redirect URL we captured is: chrome-extension://.../oauth-callback.html?code=...
-      // We don't strictly know the provider path from the extension URL unless we passed it through.
-      // BUT, the initial authUrl had the provider.
-
-      // Strategy: We can't easily know the exact callback URL path the backend expects just from the code.
-      // However, we know the `authUrl` we started with.
-      // If we assume the standard OpenWebUI pattern:
-      // /oauth/{provider}/login -> /oauth/{provider}/callback
-
-      // Let's try to reconstruct the callback URL.
-      // This is a bit fragile if we don't know the provider.
-      // A robust way is to pass the provider in the 'state' param if possible, but we can't easily modify that.
-
-      // Alternative: The backend likely accepts the code at ANY valid callback endpoint if the state matches, 
-      // or we just need to hit the one corresponding to the provider.
-
-      // Let's look at determineAuthEntryPoint. It returns `.../oauth/{provider}/login`.
-      // So we can store the provider we used.
-
-      // For simplicity, let's re-determine the provider here or assume 'microsoft' if default.
-      // Better: check the config again.
-
-      const backendConfig = this.config.backendConfig;
-      let provider = 'microsoft'; // Default
-
-      if (backendConfig) {
-        const providers = Object.keys(backendConfig.oauth.providers);
-        if (providers.length === 1) {
-          provider = providers[0];
-        }
-        // If multiple, the user selected one on the backend page. 
-        // In that case, we don't know which one they picked!
-        // This is a problem.
-
-        // However, if the user picked one, the backend redirected to /oauth/{provider}/login.
-        // Then to the provider.
-        // Then back to /oauth/{provider}/callback.
-
-        // Wait! The `declarativeNetRequest` rule intercepts `*/oauth/*/callback*`.
-        // The original URL that was intercepted IS the backend callback URL!
-        // `launchWebAuthFlow` returns the *final* URL (the extension one).
-        // Does it give us the intermediate one? No.
-
-        // CRITICAL: We need the original callback URL path to replay it correctly.
-        // But we lost it when we redirected to the extension page.
-
-        // SOLUTION: We can include the original URL in the redirect!
-        // We can use regex substitution in declarativeNetRequest to pass the provider or the full path.
-        // But `extensionPath` doesn't support regex substitution of the path, only query params are preserved.
-
-        // Actually, `regexSubstitution` is for `redirect` with `regexFilter`.
-        // Let's check our rule.
-        // "urlFilter": "*/oauth/*/callback*"
-        // "redirect": { "extensionPath": "/src/pages/oauth-callback.html" }
-
-        // If we use `regexFilter` instead of `urlFilter`, we can capture the provider.
-        // regexFilter: "^https?://[^/]+/oauth/([^/]+)/callback.*"
-        // substitution: "chrome-extension://<id>/src/pages/oauth-callback.html?provider=\1"
-
-        // BUT `extensionPath` does not support substitution variables. `regexSubstitution` is for `url` redirect.
-        // And we can't use `url` to redirect to chrome-extension:// scheme easily if it's not web-accessible?
-        // Actually we can.
-
-        // Let's stick to the current plan. If we can't get the provider, we might fail for multi-provider setups.
-        // But for now, let's assume single provider or try to find a workaround.
-
-        // Workaround: The `state` parameter is preserved.
-        // If we can't get the provider, we can try to fetch the code against the most likely callback URL.
-
-        // Let's assume the provider is 'microsoft' or the single configured one for now.
-        // If multiple providers are enabled, this might be tricky without the regex rule change.
-        // I'll add a TODO to improve this with regex rules later if needed.
-      }
-
       const callbackUrl = `${this.config.baseUrl}/oauth/${provider}/callback?code=${code}&state=${state || ''}`;
 
       console.log('[Auth] Replaying callback to:', callbackUrl);

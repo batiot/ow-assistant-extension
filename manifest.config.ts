@@ -30,13 +30,6 @@ export default defineManifest({
     'declarativeNetRequest',
     'identity',
   ],
-  declarative_net_request: {
-    rule_resources: [{
-      id: 'oauth_redirect_rules',
-      enabled: true,
-      path: 'public/rules.json',
-    }],
-  },
   host_permissions: [
     'http://localhost:8080/*',
     'http://localhost/*',  // For E2E tests with dynamic ports
