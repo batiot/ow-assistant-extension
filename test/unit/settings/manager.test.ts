@@ -27,16 +27,16 @@ describe('SettingsManager', () => {
   let manager: SettingsManager;
 
   beforeEach(() => {
-    // Reset singleton instance
-    (SettingsManager as any).instance = undefined;
-    manager = SettingsManager.getInstance();
-
-    // Reset mocks
+    // Reset mocks first
     vi.clearAllMocks();
     mockStorage.sync.get.mockResolvedValue({});
     mockStorage.local.get.mockResolvedValue({});
     mockStorage.sync.set.mockResolvedValue(undefined);
     mockStorage.local.set.mockResolvedValue(undefined);
+    
+    // Reset singleton instance and create new one
+    (SettingsManager as any).instance = undefined;
+    manager = SettingsManager.getInstance();
   });
 
   describe('Singleton Pattern', () => {
@@ -308,6 +308,61 @@ describe('SettingsManager', () => {
 
       expect(badListener).toHaveBeenCalled();
       expect(goodListener).toHaveBeenCalled();
+    });
+  });
+
+  describe('storage change handling', () => {
+    it('should not update settings when storage value is removed (undefined)', async () => {
+      // First, set some settings
+      await manager.updateSettings({ 
+        instanceUrl: 'https://test.example.com',
+        theme: 'dark' 
+      });
+
+      const initialSettings = manager.getSettings();
+      expect(initialSettings.instanceUrl).toBe('https://test.example.com');
+      expect(initialSettings.theme).toBe('dark');
+
+      // Get the registered storage listener
+      const storageListenerCall = mockStorage.onChanged.addListener.mock.calls[0];
+      expect(storageListenerCall).toBeDefined();
+      const storageListener = storageListenerCall[0];
+
+      // Simulate storage removal event (e.g., from resetSettings() in another context)
+      // This would happen when chrome.storage.local.remove() is called
+      storageListener(
+        {
+          user_settings_local: { newValue: undefined, oldValue: { instanceUrl: 'https://test.example.com' } },
+        },
+        'local'
+      );
+
+      // Settings should remain unchanged (not become undefined)
+      const settingsAfterRemoval = manager.getSettings();
+      expect(settingsAfterRemoval.instanceUrl).toBe('https://test.example.com');
+      expect(settingsAfterRemoval.theme).toBe('dark');
+    });
+
+    it('should update settings when storage value changes to a valid value', async () => {
+      await manager.updateSettings({ instanceUrl: 'https://old.example.com' });
+
+      // Get the registered storage listener
+      const storageListenerCall = mockStorage.onChanged.addListener.mock.calls[0];
+      const storageListener = storageListenerCall[0];
+
+      // Simulate storage change from another context
+      storageListener(
+        {
+          user_settings_local: { 
+            newValue: { instanceUrl: 'https://new.example.com' }, 
+            oldValue: { instanceUrl: 'https://old.example.com' } 
+          },
+        },
+        'local'
+      );
+
+      const settings = manager.getSettings();
+      expect(settings.instanceUrl).toBe('https://new.example.com');
     });
   });
 });

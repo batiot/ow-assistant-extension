@@ -22,13 +22,19 @@ export class SettingsManager {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'sync' && changes[STORAGE_KEYS.SYNC]) {
         const syncSettings: SyncSettings = changes[STORAGE_KEYS.SYNC].newValue;
-        this.settings = { ...this.settings, ...syncSettings };
-        this.notifyListeners();
+        // Only update if newValue is defined (not a removal)
+        if (syncSettings !== undefined) {
+          this.settings = { ...this.settings, ...syncSettings };
+          this.notifyListeners();
+        }
       }
       if (areaName === 'local' && changes[STORAGE_KEYS.LOCAL]) {
         const localSettings: LocalSettings = changes[STORAGE_KEYS.LOCAL].newValue;
-        this.settings = { ...this.settings, ...localSettings };
-        this.notifyListeners();
+        // Only update if newValue is defined (not a removal)
+        if (localSettings !== undefined) {
+          this.settings = { ...this.settings, ...localSettings };
+          this.notifyListeners();
+        }
       }
     });
   }
